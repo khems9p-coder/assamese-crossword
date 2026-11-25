@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="appName">শব্দজাল</string>
+    <string name="launcherName">শব্দজাল</string>
+    <!-- Lets the app open the site full screen once assetlinks.json is published -->
+    <string name="assetStatements" translatable="false">[{\"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": {\"namespace\": \"web\", \"site\": \"https://khems9p-coder.github.io\"}}]</string>
+</resources>
