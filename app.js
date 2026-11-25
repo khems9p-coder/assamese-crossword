@@ -80,75 +80,93 @@
   function shuffle(a, r) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
   // ------------------------------------------------------ grid builder ---
-  // Places words so each new word crosses an already placed word on an equal square.
-  function tryLayout(items, r, target = Infinity) {
-    const cells = new Map(); // "r,c" -> {u, dirs:Set}
-    const key = (y, x) => y + "," + x;
+  // Arrow-word layout on a fixed board: every word has a picture-clue square
+  // right before it (to the left for across, above for down). One clue square
+  // can hold two clues: across (top half, arrow →) and down (bottom half, arrow ↓).
+  const GRID_W = 8, GRID_H = 10;
+
+  function arrowLayout(order, r, W, H, cap, preferLong) {
+    const g = Array.from({ length: H }, () => Array(W).fill(null));
+    const inB = (y, x) => y >= 0 && x >= 0 && y < H && x < W;
+    const at = (y, x) => (inB(y, x) ? g[y][x] : null);
+    const isL = (y, x) => { const c = at(y, x); return !!c && c.t === "L"; };
     const placed = [];
-    const canPlace = (units, y, x, d) => {
-      const dy = d === "down" ? 1 : 0, dx = d === "across" ? 1 : 0;
-      if (cells.has(key(y - dy, x - dx)) || cells.has(key(y + dy * units.length, x + dx * units.length))) return -1;
+    let crossings = 0;
+
+    function canPlace(units, y, x, d) {
+      const dy = d === "down" ? 1 : 0, dx = 1 - dy, n = units.length;
+      const cy = y - dy, cx = x - dx;
+      if (!inB(cy, cx) || !inB(y + dy * (n - 1), x + dx * (n - 1))) return -1;
+      const clue = g[cy][cx];
+      if (clue && (clue.t !== "C" || clue[d])) return -1;
+      if (isL(y + dy * n, x + dx * n)) return -1;
       let cross = 0;
-      for (let i = 0; i < units.length; i++) {
-        const yy = y + dy * i, xx = x + dx * i, cell = cells.get(key(yy, xx));
-        if (cell) {
-          if (cell.u !== units[i] || cell.dirs.has(d)) return -1;
+      for (let i = 0; i < n; i++) {
+        const yy = y + dy * i, xx = x + dx * i, c = g[yy][xx];
+        if (!c) {
+          if (isL(yy + dx, xx + dy) || isL(yy - dx, xx - dy)) return -1; // side neighbours free
+        } else if (c.t === "L") {
+          if (c.u !== units[i] || c.dirs.has(d)) return -1;
           cross++;
-        } else {
-          // side neighbours must be free
-          if (cells.has(key(yy + dx, xx + dy)) || cells.has(key(yy - dx, xx - dy))) return -1;
-        }
+        } else return -1;
       }
       return cross;
-    };
-    const put = (it, y, x, d) => {
-      const dy = d === "down" ? 1 : 0, dx = d === "across" ? 1 : 0;
+    }
+    function touch(units, y, x, d) {
+      const dy = d === "down" ? 1 : 0, dx = 1 - dy;
+      let t = 0;
+      for (let i = -1; i <= units.length; i++) {
+        const yy = y + dy * i, xx = x + dx * i;
+        if (at(yy + dx, xx + dy)) t++;
+        if (at(yy - dx, xx - dy)) t++;
+      }
+      // hugging the board edge keeps the board tidy
+      if (y - dy === 0 || x - dx === 0) t += 1;
+      return t;
+    }
+    function put(it, y, x, d, cross) {
+      const dy = d === "down" ? 1 : 0, dx = 1 - dy;
+      const cy = y - dy, cx = x - dx;
+      if (!g[cy][cx]) g[cy][cx] = { t: "C" };
+      g[cy][cx][d] = it;
       it.units.forEach((u, i) => {
-        const k = key(y + dy * i, x + dx * i);
-        const cell = cells.get(k) || { u, dirs: new Set() };
-        cell.dirs.add(d); cells.set(k, cell);
+        const yy = y + dy * i, xx = x + dx * i;
+        if (!g[yy][xx]) g[yy][xx] = { t: "L", u, dirs: new Set() };
+        g[yy][xx].dirs.add(d);
       });
+      crossings += cross;
       placed.push({ ...it, y, x, dir: d });
-    };
-    const order = items.slice();
-    put(order[0], 0, 0, r() < 0.5 ? "across" : "down");
-    let pending = order.slice(1);
-    let progress = true;
-    while (pending.length && progress && placed.length < target) {
-      progress = false;
+    }
+
+    let pending = order.slice();
+    for (let pass = 0; pass < 4 && pending.length && placed.length < cap; pass++) {
       const left = [];
       for (const it of pending) {
-        if (placed.length >= target) break;
-        const options = [];
-        for (const p of placed) {
-          const d = p.dir === "across" ? "down" : "across";
-          p.units.forEach((pu, pi) => {
-            it.units.forEach((u, ui) => {
-              if (u !== pu) return;
-              const cy = p.y + (p.dir === "down" ? pi : 0), cx = p.x + (p.dir === "across" ? pi : 0);
-              const y = cy - (d === "down" ? ui : 0), x = cx - (d === "across" ? ui : 0);
-              const c = canPlace(it.units, y, x, d);
-              if (c > 0) options.push({ y, x, d, score: c * 10 + r() * 3 });
-            });
-          });
+        if (placed.length >= cap) { left.push(it); continue; }
+        let best = null;
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) for (const d of ["across", "down"]) {
+          const c = canPlace(it.units, y, x, d);
+          if (c < 0) continue;
+          // first word anywhere; then crossings first, lone words only from pass 2
+          if (placed.length && c === 0 && pass < 1) continue;
+          const sc = c * 30 + touch(it.units, y, x, d) * 3 + (preferLong ? it.units.length * 2 : 0) + r() * 4 - (c === 0 ? 12 : 0);
+          if (!best || sc > best.sc) best = { y, x, d, c, sc };
         }
-        if (options.length) {
-          options.sort((a, b) => b.score - a.score);
-          const o = options[0];
-          put(it, o.y, o.x, o.d); progress = true;
-        } else left.push(it);
+        if (best) put(it, best.y, best.x, best.d, best.c); else left.push(it);
       }
       pending = left;
     }
-    return { placed, cells };
+    let letters = 0;
+    for (const row of g) for (const c of row) if (c && c.t === "L") letters++;
+    return { g, placed, crossings, letters };
   }
 
   // Three difficulty levels, 20 levels each. Every level picks its words from
-  // the whole picture-word pool, limited by word length and grid size.
+  // the whole picture-word pool, limited by word length.
   const DIFFS = [
-    { id: "easy", as: "সহজ", en: "Easy", count: [4, 5], maxLen: { as: 3, en: 5 }, minLen: { as: 1, en: 3 }, size: 7, color: "#7cc576" },
-    { id: "medium", as: "মধ্যম", en: "Medium", count: [6, 7], maxLen: { as: 4, en: 7 }, minLen: { as: 2, en: 3 }, size: 9, color: "#f7a541" },
-    { id: "hard", as: "কঠিন", en: "Hard", count: [8, 10], maxLen: { as: 6, en: 9 }, minLen: { as: 2, en: 4 }, size: 11, color: "#ef5b5b" }
+    { id: "easy", as: "সহজ", en: "Easy", cap: 12, minLen: { as: 2, en: 3 }, maxLen: { as: 3, en: 5 }, decoys: 1, color: "#7cc576" },
+    { id: "medium", as: "মধ্যম", en: "Medium", cap: 15, minLen: { as: 2, en: 3 }, maxLen: { as: 4, en: 7 }, decoys: 2, color: "#f7a541" },
+    { id: "hard", as: "কঠিন", en: "Hard", cap: 19, minLen: { as: 2, en: 3 }, maxLen: { as: 7, en: 9 }, decoys: 3, color: "#ef5b5b" }
   ];
   const LEVELS = 20;
 
@@ -165,43 +183,34 @@
 
   function buildLevel(diffIndex, level, lang) {
     const D = DIFFS[diffIndex];
-    const r = rng(`${lang}-${D.id}-${level}`);
+    const r = rng(`${lang}-${D.id}-${level}-arrow`);
     const pool = wordPool(lang).filter((it) => it.units.length >= D.minLen[lang] && it.units.length <= D.maxLen[lang]);
     // later levels in a difficulty get a few more words
-    const target = D.count[0] + Math.round(((D.count[1] - D.count[0]) * (level - 1)) / (LEVELS - 1));
+    const cap = D.cap - 3 + Math.round((3 * (level - 1)) / (LEVELS - 1));
     let best = null;
-    for (let attempt = 0; attempt < 250; attempt++) {
+    for (let attempt = 0; attempt < 70; attempt++) {
       const order = shuffle(pool, r);
-      // start from a longer word so others have something to cross
-      const startIdx = order.findIndex((it) => it.units.length >= Math.min(D.maxLen[lang], lang === "as" ? 3 : 5));
-      if (startIdx > 0) order.unshift(order.splice(startIdx, 1)[0]);
-      const L = tryLayout(order, r, target);
-      let minY = Infinity, minX = Infinity, maxY = -Infinity, maxX = -Infinity;
-      for (const k of L.cells.keys()) { const [y, x] = k.split(",").map(Number); minY = Math.min(minY, y); maxY = Math.max(maxY, y); minX = Math.min(minX, x); maxX = Math.max(maxX, x); }
-      const h = maxY - minY + 1, w = maxX - minX + 1;
-      if (w > D.size || h > D.size) continue; // keep it phone sized
-      const crossings = [...L.cells.values()].filter((c) => c.dirs.size > 1).length;
-      const score = Math.min(L.placed.length, target) * 1000 + crossings * 25 - w * h - Math.abs(w - h) * 4;
-      if (!best || score > best.score) best = { score, L, minY, minX, h, w };
-      if (L.placed.length >= target && attempt > 40) break;
+      const L = arrowLayout(order, r, GRID_W, GRID_H, cap, diffIndex === 2);
+      const score = L.placed.length * 40 + L.letters * 3 + L.crossings * 12;
+      if (!best || score > best.score) best = { score, L };
     }
-    const { L, minY, minX, h, w } = best;
-    const words = L.placed.map((p) => ({ ...p, y: p.y - minY, x: p.x - minX }));
-    // number start squares in reading order
-    const starts = new Map();
-    words.slice().sort((a, b) => a.y - b.y || a.x - b.x).forEach((wd) => {
-      const k = wd.y + "," + wd.x;
-      if (!starts.has(k)) starts.set(k, starts.size + 1);
-      wd.num = starts.get(k);
-    });
-    words.sort((a, b) => (a.dir === b.dir ? a.num - b.num : a.dir === "across" ? -1 : 1));
+    const { L } = best;
+    // reading order: top to bottom, left to right; across before down
+    const words = L.placed.slice().sort((a, b) => a.y - b.y || a.x - b.x || (a.dir === "across" ? -1 : 1));
     words.forEach((wd, i) => {
       wd.id = i;
       wd.cells = wd.units.map((_, j) => [wd.y + (wd.dir === "down" ? j : 0), wd.x + (wd.dir === "across" ? j : 0)]);
+      wd.clue = wd.dir === "down" ? [wd.y - 1, wd.x] : [wd.y, wd.x - 1];
     });
-    const sol = Array.from({ length: h }, () => Array(w).fill(null));
-    words.forEach((wd) => wd.cells.forEach(([y, x], j) => (sol[y][x] = wd.units[j])));
-    return { w, h, sol, words, numbers: starts };
+    const sol = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
+    const clues = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
+    words.forEach((wd) => {
+      wd.cells.forEach(([y, x], j) => (sol[y][x] = wd.units[j]));
+      const [cy, cx] = wd.clue;
+      clues[cy][cx] = clues[cy][cx] || {};
+      clues[cy][cx][wd.dir] = wd.id;
+    });
+    return { w: GRID_W, h: GRID_H, sol, clues, words };
   }
 
   // ---------------------------------------------------------- storage ---
@@ -235,6 +244,10 @@
     const k = lang + d + "-" + l;
     if (!levelCache.has(k)) levelCache.set(k, buildLevel(d, l, lang));
     return levelCache.get(k);
+  }
+  function cardIcon(d, l) {
+    const pool = wordPool(lang);
+    return pool[Math.floor(rng(`${lang}-${d}-${l}-card`)() * pool.length)].icon;
   }
   const levelKey = (d, l) => `${lang}:${DIFFS[d].id}:${l}`;
   const isUnlocked = (d, l, prog) => l === 1 || !!prog[levelKey(d, l - 1)];
@@ -288,7 +301,7 @@
       if (p) { solvedCount++; starCount += p.stars; }
       const open = isUnlocked(diff, l, prog);
       const inProg = !p && open && store.get("save:" + levelKey(diff, l), null);
-      const art = open ? doodle((() => { const ws = getLevel(diff, l).words; return ws[(l * 7) % ws.length].icon; })(), "card-art") : `<span class="lock">🔒</span>`;
+      const art = open ? doodle(cardIcon(diff, l), "card-art") : `<span class="lock">🔒</span>`;
       cards.push(`<button class="level-card${p ? " solved" : ""}${open ? "" : " locked"}" data-l="${l}" ${open ? "" : "disabled"}>
         <span class="num">${fmtNum(l)}</span>${art}
         <span class="stars">${[1, 2, 3].map((s) => `<i class="${p && s <= p.stars ? "on" : ""}">★</i>`).join("")}</span>
@@ -380,7 +393,6 @@
       <section class="board-wrap"><div class="board" id="board"></div></section>
       <section class="clue-bar" id="clueBar"></section>
       <section class="tiles" id="tiles"></section>
-      <section class="clue-strip-wrap"><h2>${t().clues}</h2><div class="clue-strip" id="strip"></div></section>
       <div class="tools">
         <button id="checkBtn">✓ ${t().check}</button>
         <button id="typeBtn">⌨ ${t().type}</button>
@@ -393,31 +405,42 @@
     $("#checkBtn").onclick = checkAll;
     $("#typeBtn").onclick = openTypeSheet;
     $("#resetBtn").onclick = () => { store.set(game.saveKey, null); startGame(game.diff, game.level, true); };
-    drawBoard(); drawClue(); drawTiles(); drawStrip();
+    drawBoard(); drawClue(); drawTiles();
   }
 
   function drawBoard() {
     const { grid } = game;
     const board = $("#board");
-    const maxW = Math.min(window.innerWidth, 560) - 24;
-    const size = Math.max(22, Math.min(lang === "as" ? 52 : 44, Math.floor((maxW - (grid.w - 1) * 3) / grid.w)));
+    const maxW = Math.min(window.innerWidth, 560) - 24 - 4;
+    const size = Math.max(30, Math.min(58, Math.floor((maxW - (grid.w - 1) * 2) / grid.w)));
     board.style.setProperty("--cell", size + "px");
     board.style.gridTemplateColumns = `repeat(${grid.w}, var(--cell))`;
     const act = grid.words[game.active];
     const actSet = new Set(act.cells.map(([y, x]) => y + "," + x));
     const [cy, cx] = act.cells[game.cursor];
+    const solvedSet = new Set();
+    grid.words.forEach((w) => { if (wordSolved(w)) w.cells.forEach(([y, x]) => solvedSet.add(y + "," + x)); });
+    const clueHalf = (id, d, half) => {
+      const w = grid.words[id];
+      const cls = ["clue-half", half, id === game.active ? "on" : "", wordSolved(w) ? "done" : ""].join(" ");
+      return `<button class="${cls}" data-id="${id}" aria-label="${d === "across" ? t().across : t().down}">${doodle(w.icon, "cell-art")}<i class="arrow ${d}"></i></button>`;
+    };
     let html = "";
     for (let y = 0; y < grid.h; y++) for (let x = 0; x < grid.w; x++) {
-      const u = grid.sol[y][x];
-      if (u == null) { html += `<div class="cell void"></div>`; continue; }
-      const k = y + "," + x, v = game.fill[y][x];
-      const num = grid.numbers.get(k);
-      const solvedCell = grid.words.some((w) => wordSolved(w) && w.cells.some(([a, b]) => a === y && b === x));
-      const cls = ["cell", actSet.has(k) ? "in-word" : "", y === cy && x === cx ? "cursor" : "", game.wrong.has(k) ? "wrong" : "", game.revealed.has(k) ? "revealed" : "", solvedCell ? "ok" : "", v && v.length > 2 ? "long" : ""].join(" ");
-      html += `<button class="${cls}" data-y="${y}" data-x="${x}">${num ? `<span class="n">${fmtNum(num)}</span>` : ""}<span class="v">${v || ""}</span></button>`;
+      const u = grid.sol[y][x], c = grid.clues[y][x];
+      if (u != null) {
+        const k = y + "," + x, v = game.fill[y][x];
+        const cls = ["cell", actSet.has(k) ? "in-word" : "", y === cy && x === cx ? "cursor" : "", game.wrong.has(k) ? "wrong" : "",
+          game.revealed.has(k) ? "revealed" : "", solvedSet.has(k) ? "ok" : "", v && v.length > 2 ? "long" : ""].join(" ");
+        html += `<button class="${cls}" data-y="${y}" data-x="${x}"><span class="v">${v || ""}</span></button>`;
+      } else if (c) {
+        const both = c.across != null && c.down != null;
+        html += `<div class="cell clue${both ? " two" : ""}">${c.across != null ? clueHalf(c.across, "across", both ? "top" : "full") : ""}${c.down != null ? clueHalf(c.down, "down", both ? "bottom" : "full") : ""}</div>`;
+      } else html += `<div class="cell blank"></div>`;
     }
     board.innerHTML = html;
     board.querySelectorAll("button.cell").forEach((b) => b.addEventListener("click", () => tapCell(+b.dataset.y, +b.dataset.x)));
+    board.querySelectorAll(".clue-half").forEach((b) => b.addEventListener("click", () => selectWord(+b.dataset.id)));
   }
 
   function tapCell(y, x) {
@@ -439,7 +462,7 @@
     refresh();
   }
 
-  function refresh() { drawBoard(); drawClue(); drawTiles(); drawStrip(); }
+  function refresh() { drawBoard(); drawClue(); drawTiles(); }
 
   function drawClue() {
     const w = game.grid.words[game.active];
@@ -448,7 +471,7 @@
       <button class="nav" id="prevW" aria-label="previous">‹</button>
       <div class="clue-art ${wordSolved(w) ? "solved" : ""}">${doodle(w.icon, "big-art")}</div>
       <div class="clue-info">
-        <span class="clue-num">${fmtNum(w.num)} · ${w.dir === "across" ? t().across + " →" : t().down + " ↓"}</span>
+        <span class="clue-num">${w.dir === "across" ? t().across + " →" : t().down + " ↓"}</span>
         <span class="clue-len">${fmtNum(w.units.length)}${t().squares}</span>
         ${meaning}
       </div>
@@ -458,26 +481,23 @@
     $("#nextW").onclick = () => selectWord((game.active + 1) % n);
   }
 
+  // Letter suggestions: the letters (or syllables) still missing from the
+  // selected word, mixed with a few decoys, in a fixed shuffled order.
   function drawTiles() {
     const w = game.grid.words[game.active];
-    const r = rng(game.seed + w.id);
+    const D = DIFFS[game.diff];
+    const r = rng(game.seed + "-" + w.id);
     const pool = [...new Set(game.grid.words.flatMap((x) => x.units))].filter((u) => !w.units.includes(u));
-    const extra = shuffle(pool, r).slice(0, Math.max(3, Math.min(6, 10 - w.units.length)));
-    if (lang === "en") while (extra.length < 4) { const c = String.fromCharCode(65 + Math.floor(r() * 26)); if (!w.units.includes(c) && !extra.includes(c)) extra.push(c); }
-    const tiles = shuffle([...w.units, ...extra], r);
-    $("#tiles").innerHTML = tiles.map((u) => `<button class="tile" data-u="${u}">${u}</button>`).join("") + `<button class="tile back" id="bk" aria-label="delete">⌫</button>`;
+    let decoys = shuffle(pool, r).slice(0, D.decoys);
+    if (lang === "en") while (decoys.length < D.decoys) { const c = String.fromCharCode(65 + Math.floor(r() * 26)); if (!w.units.includes(c) && !decoys.includes(c)) decoys.push(c); }
+    const items = shuffle([...w.units.map((u, j) => ({ u, j })), ...decoys.map((u) => ({ u, j: -1 }))], r);
+    const need = (j) => { const [y, x] = w.cells[j]; return game.fill[y][x] !== w.units[j]; };
+    const show = wordSolved(w) ? [] : items.filter((it) => it.j < 0 || need(it.j));
+    $("#tiles").innerHTML = (show.length
+      ? show.map((it) => `<button class="tile" data-u="${it.u}">${it.u}</button>`).join("")
+      : `<span class="tiles-done">✓</span>`) + `<button class="tile back" id="bk" aria-label="delete">⌫</button>`;
     $("#tiles").querySelectorAll(".tile[data-u]").forEach((b) => b.addEventListener("click", () => enter(b.dataset.u)));
     $("#bk").onclick = backspace;
-  }
-
-  function drawStrip() {
-    const { words } = game.grid;
-    const strip = $("#strip");
-    strip.innerHTML = words.map((w) => `<button class="chip ${w.id === game.active ? "on" : ""} ${wordSolved(w) ? "done" : ""}" data-id="${w.id}">
-        <span class="chip-n">${fmtNum(w.num)}${w.dir === "across" ? "→" : "↓"}</span>${doodle(w.icon, "chip-art")}</button>`).join("");
-    strip.querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => selectWord(+b.dataset.id)));
-    const on = strip.querySelector(".chip.on");
-    if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest", inline: "center" });
   }
 
   function enter(u) {
@@ -490,7 +510,10 @@
     if (game.revealed.has(y + "," + x)) return;
     game.fill[y][x] = u;
     game.wrong.delete(y + "," + x);
-    if (game.cursor < w.cells.length - 1) game.cursor++;
+    // move on to the next empty square of this word
+    let nx = -1;
+    for (let j = game.cursor + 1; j < w.cells.length; j++) { const [yy, xx] = w.cells[j]; if (!game.fill[yy][xx]) { nx = j; break; } }
+    game.cursor = nx >= 0 ? nx : Math.min(game.cursor + 1, w.cells.length - 1);
     afterChange(w);
   }
 
@@ -573,7 +596,7 @@
     const sheet = $("#sheet");
     sheet.hidden = false;
     sheet.innerHTML = `<form class="sheet" id="typeForm">
-      <div class="sheet-head">${doodle(w.icon, "sheet-art")}<div><b>${fmtNum(w.num)} ${w.dir === "across" ? t().across : t().down}</b><small>${fmtNum(w.units.length)}${t().squares}</small></div></div>
+      <div class="sheet-head">${doodle(w.icon, "sheet-art")}<div><b>${w.dir === "across" ? t().across + " →" : t().down + " ↓"}</b><small>${fmtNum(w.units.length)}${t().squares}</small></div></div>
       <input id="typeIn" autocomplete="off" autocapitalize="${lang === "en" ? "characters" : "off"}" placeholder="${t().typePh}" lang="${lang}">
       <button class="big" type="submit">${t().fill}</button>
       <button class="link" type="button" id="tClose">${t().cancel}</button></form>`;

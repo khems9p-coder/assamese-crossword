@@ -6,12 +6,15 @@ GitHub Pages and wrapped for the Play Store. Developed by **KBX Studios**.
 ## What's in the game
 
 - **Two languages** – অসমীয়া (one syllable per square, e.g. কা | জি | ৰ | ঙা) and English (one letter per square).
+- **Arrow-word grid** – every level uses the same 8 × 10 board. Picture clues sit inside the grid, with an arrow
+  pointing to their word (→ across, ↓ down); one clue square can hold two pictures.
 - **Picture clues** – every clue is a hand-drawn 2D doodle of the object instead of a written clue.
 - **3 difficulty levels** – সহজ / Easy, মধ্যম / Medium, কঠিন / Hard, each with **Levels 1–20**.
   Level 1 is open; finishing a level unlocks the next.
 - **3 hints per level** – each hint either reveals one square or shows the word's name in the other language.
   Stars: ★★★ with no hints, ★★ with 1–2 hints, ★ with all 3.
-- **Syllable/letter tile keyboard**, plus a "Type" box for anyone with an Assamese keyboard.
+- **Letter suggestions** – tiles below the board show the missing letters (or syllables) of the selected word
+  plus a few decoys (1 on Easy, 2 on Medium, 3 on Hard). A "Type" box is there for anyone with an Assamese keyboard.
 - Progress, stars and unfinished puzzles saved on the phone; works offline after the first visit.
 - **Optional Google sign-in** to keep progress online (Firebase).
 - **Optional Google ads** (AdSense) on the home screen and after a level is finished — never during play.
