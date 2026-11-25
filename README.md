@@ -14,7 +14,8 @@ GitHub Pages and wrapped for the Play Store. Developed by **KBX Studios**.
 - **3 hints per level** – each hint either reveals one square or shows the word's name in the other language.
   Stars: ★★★ with no hints, ★★ with 1–2 hints, ★ with all 3.
 - **Letter suggestions** – tiles below the board show the missing letters (or syllables) of the selected word
-  plus a few decoys (1 on Easy, 2 on Medium, 3 on Hard). A "Type" box is there for anyone with an Assamese keyboard.
+  plus a few decoys (1 on Easy, 2 on Medium, 3 on Hard). Tap a tile to fill the selected square, or **drag it onto
+  any square**. Placed letters can be dragged to another square, or off the board to remove them. A "Type" box is there for anyone with an Assamese keyboard.
 - Progress, stars and unfinished puzzles saved on the phone; works offline after the first visit.
 - **Optional Google sign-in** to keep progress online (Firebase).
 - **Optional Google ads** (AdSense) on the home screen and after a level is finished — never during play.

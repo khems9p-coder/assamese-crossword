@@ -439,7 +439,12 @@
       } else html += `<div class="cell blank"></div>`;
     }
     board.innerHTML = html;
-    board.querySelectorAll("button.cell").forEach((b) => b.addEventListener("click", () => tapCell(+b.dataset.y, +b.dataset.x)));
+    board.querySelectorAll("button.cell").forEach((b) => {
+      const y = +b.dataset.y, x = +b.dataset.x, v = game.fill[y][x];
+      const tap = () => tapCell(y, x);
+      if (v && !game.revealed.has(y + "," + x)) { b.classList.add("filled"); makeDrag(b, { u: v, from: [y, x] }, tap); }
+      else b.addEventListener("click", tap);
+    });
     board.querySelectorAll(".clue-half").forEach((b) => b.addEventListener("click", () => selectWord(+b.dataset.id)));
   }
 
@@ -496,8 +501,71 @@
     $("#tiles").innerHTML = (show.length
       ? show.map((it) => `<button class="tile" data-u="${it.u}">${it.u}</button>`).join("")
       : `<span class="tiles-done">✓</span>`) + `<button class="tile back" id="bk" aria-label="delete">⌫</button>`;
-    $("#tiles").querySelectorAll(".tile[data-u]").forEach((b) => b.addEventListener("click", () => enter(b.dataset.u)));
+    $("#tiles").querySelectorAll(".tile[data-u]").forEach((b) => makeDrag(b, { u: b.dataset.u }, () => enter(b.dataset.u)));
     $("#bk").onclick = backspace;
+  }
+
+  // ---------------------------------------------------------- dragging ---
+  // Drag a tile onto any square, or drag a placed letter to another square
+  // (drop it off the board to remove it). A short tap still works as before.
+  function makeDrag(el, info, onTap) {
+    el.addEventListener("click", (e) => { if (e.detail === 0) onTap(); }); // keyboard
+    el.addEventListener("pointerdown", (e) => {
+      if (e.button > 0 || !game || game.finished) return;
+      const sx = e.clientX, sy = e.clientY;
+      let ghost = null, over = null;
+      try { el.setPointerCapture(e.pointerId); } catch (err) { /* older browsers */ }
+      const move = (ev) => {
+        if (!ghost) {
+          if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 8) return;
+          ghost = document.createElement("div");
+          ghost.className = "drag-ghost";
+          ghost.textContent = info.u;
+          document.body.appendChild(ghost);
+          el.classList.add("dragging");
+        }
+        ghost.style.left = ev.clientX + "px";
+        ghost.style.top = ev.clientY + "px";
+        const t = document.elementFromPoint(ev.clientX, ev.clientY);
+        const c = t && t.closest ? t.closest("#board .cell[data-y]") : null;
+        if (over && over !== c) over.classList.remove("drop");
+        over = c;
+        if (c) c.classList.add("drop");
+      };
+      const up = (ev) => {
+        el.removeEventListener("pointermove", move);
+        el.removeEventListener("pointerup", up);
+        el.removeEventListener("pointercancel", up);
+        if (over) over.classList.remove("drop");
+        if (!ghost) { if (ev.type === "pointerup") onTap(); return; }
+        ghost.remove();
+        el.classList.remove("dragging");
+        if (ev.type === "pointercancel") return;
+        dropUnit(info, over ? [+over.dataset.y, +over.dataset.x] : null);
+      };
+      el.addEventListener("pointermove", move);
+      el.addEventListener("pointerup", up);
+      el.addEventListener("pointercancel", up);
+    });
+  }
+
+  function dropUnit(info, target) {
+    const same = info.from && target && info.from[0] === target[0] && info.from[1] === target[1];
+    if (same) return;
+    if (target && game.revealed.has(target[0] + "," + target[1])) return; // hint squares are fixed
+    if (info.from) { const [fy, fx] = info.from; game.fill[fy][fx] = ""; game.wrong.delete(fy + "," + fx); }
+    if (!target) { refresh(); save(); return; }
+    const [y, x] = target;
+    game.fill[y][x] = info.u;
+    game.wrong.delete(y + "," + x);
+    const here = game.grid.words.filter((w) => w.cells.some(([a, b]) => a === y && b === x));
+    const w = here.find((wd) => wd.id === game.active) || here[0];
+    game.active = w.id;
+    const j = w.cells.findIndex(([a, b]) => a === y && b === x);
+    let nx = -1;
+    for (let k = j + 1; k < w.cells.length; k++) { const [yy, xx] = w.cells[k]; if (!game.fill[yy][xx]) { nx = k; break; } }
+    game.cursor = nx >= 0 ? nx : j;
+    afterChange(w);
   }
 
   function enter(u) {
@@ -530,6 +598,7 @@
 
   function afterChange(w) {
     save();
+    if (game.grid.words.every(wordSolved)) return finish();
     if (wordSolved(w)) {
       buzz(30);
       if (game.grid.words.every(wordSolved)) return finish();
