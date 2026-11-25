@@ -16,6 +16,9 @@ GitHub Pages and wrapped for the Play Store. Developed by **KBX Studios**.
 - **Letter suggestions** – tiles below the board show the missing letters (or syllables) of the selected word
   plus a few decoys (1 on Easy, 2 on Medium, 3 on Hard). Tap a tile to fill the selected square, or **drag it onto
   any square**. Placed letters can be dragged to another square, or off the board to remove them. A "Type" box is there for anyone with an Assamese keyboard.
+- **Sound and vibration** – effects for placing, picking up and removing letters, a chime for each finished word,
+  a buzz for a wrong word, a sparkle for hints and a tune when the level is done. Switch either off in ⚙️ Settings
+  on the home screen; 🔊 in the game bar mutes sound quickly.
 - Progress, stars and unfinished puzzles saved on the phone; works offline after the first visit.
 - **Optional Google sign-in** to keep progress online (Firebase).
 - **Optional Google ads** (AdSense) on the home screen and after a level is finished — never during play.

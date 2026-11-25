@@ -14,7 +14,7 @@
       allWrongOk: "সকলো শুদ্ধ!", someWrong: (n) => `${toAsNum(n)}টা ঘৰ ভুল`, reset: "নতুনকৈ আৰম্ভ",
       levelWord: "স্তৰ", meaning: "অৰ্থ", credit: "বিকাশক", account: "একাউণ্ট", guest: "অতিথি", signIn: "Google-ৰে লগ ইন কৰক", signOut: "লগ আউট",
       loginInfo: "লগ ইন কৰিলে আপোনাৰ অগ্ৰগতি অনলাইনত সুৰক্ষিত থাকিব আৰু আন ফোনতো পাব।", synced: "অগ্ৰগতি অনলাইনত ছেভ হ'ল",
-      notSetup: "লগ ইন সুবিধা সোনকালে আহিছে। এতিয়া অগ্ৰগতি এই ফোনতে ছেভ হৈ থাকে।", signedAs: "লগ ইন কৰা হৈছে", loginFail: "লগ ইন হ'ব নোৱাৰিলে", words: "টা শব্দ", clues: "ছবি সূত্ৰ"
+      notSetup: "লগ ইন সুবিধা সোনকালে আহিছে। এতিয়া অগ্ৰগতি এই ফোনতে ছেভ হৈ থাকে।", signedAs: "লগ ইন কৰা হৈছে", loginFail: "লগ ইন হ'ব নোৱাৰিলে", words: "টা শব্দ", clues: "ছবি সূত্ৰ", settings: "ছেটিংছ", close: "বন্ধ কৰক", sound: "ধ্বনি", vibration: "কম্পন", on: "অন", off: "অফ"
     },
     en: {
       appTitle: "Picture Crossword", appSub: "Look at the picture, fill the word", modeAs: "অসমীয়া", modeEn: "English",
@@ -26,7 +26,7 @@
       allWrongOk: "All correct so far!", someWrong: (n) => `${n} square${n === 1 ? "" : "s"} wrong`, reset: "Start over",
       levelWord: "Level", meaning: "Meaning", credit: "Developed by", account: "Account", guest: "Guest", signIn: "Sign in with Google", signOut: "Sign out",
       loginInfo: "Sign in to keep your progress safe online and get it on any phone.", synced: "Progress saved online",
-      notSetup: "Sign-in is coming soon. For now your progress is saved on this phone.", signedAs: "Signed in as", loginFail: "Could not sign in", words: " words", clues: "Picture clues"
+      notSetup: "Sign-in is coming soon. For now your progress is saved on this phone.", signedAs: "Signed in as", loginFail: "Could not sign in", words: " words", clues: "Picture clues", settings: "Settings", close: "Close", sound: "Sound", vibration: "Vibration", on: "On", off: "Off"
     }
   };
   const AS_DIGITS = "০১২৩৪৫৬৭৮৯";
@@ -310,6 +310,7 @@
     }
     app.innerHTML = `
       <header class="home-head">
+        <button class="gear-btn" id="gear" aria-label="${t().settings}">⚙️</button>
         <button class="account-btn" id="acct" aria-label="${t().account}">${accountBadge()}</button>
         <div class="logo">${["tiger", "rhino", "japi"].map((i) => doodle(i, "logo-art")).join("")}</div>
         <h1>${t().appTitle}</h1>
@@ -327,6 +328,7 @@
       <div class="toast" id="toast"></div>
       <div class="sheet-back" id="sheet" hidden></div>`;
     $("#acct").onclick = openAccountSheet;
+    $("#gear").onclick = openSettings;
     if (window.Ads) Ads.fill();
     app.querySelectorAll("[data-lang]").forEach((b) => b.addEventListener("click", () => { lang = b.dataset.lang; store.set("lang", lang); renderHome(); }));
     app.querySelectorAll("[data-d]").forEach((b) => b.addEventListener("click", () => { diff = +b.dataset.d; store.set("diff", diff); renderHome(); }));
@@ -388,6 +390,7 @@
         <button class="icon-btn" id="back" aria-label="${t().home}">‹</button>
         <div class="bar-title"><b>${t().levelWord} ${fmtNum(game.level)}</b><small><i class="dot" style="background:${D.color}"></i>${lang === "as" ? D.as : D.en} · ${fmtNum(n)}${t().words}</small></div>
         <span class="timer" id="timer">${fmtTime(game.seconds)}</span>
+        <button class="icon-btn sound-btn" id="soundBtn" aria-label="${t().sound}">${fx.sound ? "🔊" : "🔇"}</button>
         <button class="hint-btn" id="hint">💡 <span id="hintCount">${fmtNum(MAX_HINTS - game.hintsUsed)}</span></button>
       </header>
       <section class="board-wrap"><div class="board" id="board"></div></section>
@@ -402,6 +405,7 @@
       <div class="sheet-back" id="sheet" hidden></div>`;
     $("#back").onclick = () => { save(); renderHome(); };
     $("#hint").onclick = openHintSheet;
+    $("#soundBtn").onclick = () => { fx.sound = !fx.sound; store.set("sound", fx.sound); syncSoundBtn(); feedback("ok"); };
     $("#checkBtn").onclick = checkAll;
     $("#typeBtn").onclick = openTypeSheet;
     $("#resetBtn").onclick = () => { store.set(game.saveKey, null); startGame(game.diff, game.level, true); };
@@ -462,6 +466,7 @@
   }
 
   function selectWord(id) {
+    if (fx.sound) try { SOUNDS.tap(); } catch (e) { /* audio blocked */ }
     game.active = id;
     game.cursor = nextEmpty(game.grid.words[id], 0);
     refresh();
@@ -523,6 +528,7 @@
           ghost.textContent = info.u;
           document.body.appendChild(ghost);
           el.classList.add("dragging");
+          feedback("pick");
         }
         ghost.style.left = ev.clientX + "px";
         ghost.style.top = ev.clientY + "px";
@@ -554,8 +560,9 @@
     if (same) return;
     if (target && game.revealed.has(target[0] + "," + target[1])) return; // hint squares are fixed
     if (info.from) { const [fy, fx] = info.from; game.fill[fy][fx] = ""; game.wrong.delete(fy + "," + fx); }
-    if (!target) { refresh(); save(); return; }
+    if (!target) { feedback("clear"); refresh(); save(); return; }
     const [y, x] = target;
+    feedback("place");
     game.fill[y][x] = info.u;
     game.wrong.delete(y + "," + x);
     const here = game.grid.words.filter((w) => w.cells.some(([a, b]) => a === y && b === x));
@@ -578,6 +585,7 @@
     if (game.revealed.has(y + "," + x)) return;
     game.fill[y][x] = u;
     game.wrong.delete(y + "," + x);
+    feedback("place");
     // move on to the next empty square of this word
     let nx = -1;
     for (let j = game.cursor + 1; j < w.cells.length; j++) { const [yy, xx] = w.cells[j]; if (!game.fill[yy][xx]) { nx = j; break; } }
@@ -592,7 +600,7 @@
       if (game.cursor > 0) game.cursor--;
       [y, x] = w.cells[game.cursor];
     }
-    if (!game.revealed.has(y + "," + x)) game.fill[y][x] = "";
+    if (!game.revealed.has(y + "," + x) && game.fill[y][x]) { game.fill[y][x] = ""; feedback("clear"); }
     refresh(); save();
   }
 
@@ -600,12 +608,13 @@
     save();
     if (game.grid.words.every(wordSolved)) return finish();
     if (wordSolved(w)) {
-      buzz(30);
+      feedback("word");
       if (game.grid.words.every(wordSolved)) return finish();
       // jump to the next unsolved word
       const ws = game.grid.words;
       for (let i = 1; i <= ws.length; i++) { const c = ws[(w.id + i) % ws.length]; if (!wordSolved(c)) { game.active = c.id; game.cursor = nextEmpty(c, 0); break; } }
     } else if (wordFull(w)) {
+      feedback("wrong");
       toast(t().someWrong(w.cells.filter(([y, x], j) => game.fill[y][x] !== w.units[j]).length));
     }
     refresh();
@@ -622,6 +631,7 @@
   function checkAll() {
     game.wrong.clear();
     game.grid.sol.forEach((row, y) => row.forEach((u, x) => { const v = game.fill[y] && game.fill[y][x]; if (u != null && v && v !== u) game.wrong.add(y + "," + x); }));
+    feedback(game.wrong.size ? "wrong" : "ok");
     toast(game.wrong.size ? t().someWrong(game.wrong.size) : t().allWrongOk);
     drawBoard();
   }
@@ -644,7 +654,7 @@
     $("#hCell").onclick = () => { close(); revealCell(); };
     $("#hMean").onclick = () => { close(); game.shownMeaning.add(w.id); useHint(); refresh(); };
   }
-  function useHint() { game.hintsUsed = Math.min(MAX_HINTS, game.hintsUsed + 1); $("#hintCount").textContent = fmtNum(MAX_HINTS - game.hintsUsed); save(); }
+  function useHint() { feedback("hint"); game.hintsUsed = Math.min(MAX_HINTS, game.hintsUsed + 1); $("#hintCount").textContent = fmtNum(MAX_HINTS - game.hintsUsed); save(); }
   function revealCell() {
     const w = game.grid.words[game.active];
     let j = w.cells.findIndex(([y, x], i) => i >= game.cursor && game.fill[y][x] !== w.units[i]);
@@ -689,7 +699,7 @@
     store.set(game.saveKey, null);
     syncCloud(false);
     refresh();
-    buzz([40, 60, 40]);
+    feedback("win");
     const sheet = $("#sheet");
     sheet.hidden = false;
     const hasNext = game.level < LEVELS;
@@ -712,7 +722,61 @@
   // ------------------------------------------------------------- misc ---
   let toastT = null;
   function toast(msg) { const el = $("#toast"); if (!el) return; el.textContent = msg; el.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 1800); }
-  function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) { /* no vibration */ } }
+  // ------------------------------------------------- sound & vibration ---
+  // Short effects synthesised with Web Audio (no sound files, works offline).
+  const fx = { ctx: null, sound: store.get("sound", true), vib: store.get("vib", true) };
+  function audio() {
+    if (!fx.ctx) { const A = window.AudioContext || window.webkitAudioContext; if (!A) return null; fx.ctx = new A(); }
+    if (fx.ctx.state === "suspended") fx.ctx.resume();
+    return fx.ctx;
+  }
+  function tone(freq, dur, { type = "sine", vol = 0.12, at = 0, to = null } = {}) {
+    const c = audio(); if (!c) return;
+    const t0 = c.currentTime + at, o = c.createOscillator(), g = c.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    if (to) o.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g).connect(c.destination);
+    o.start(t0); o.stop(t0 + dur + 0.02);
+  }
+  const SOUNDS = {
+    tap: () => tone(520, 0.05, { type: "triangle", vol: 0.06 }),
+    pick: () => tone(440, 0.06, { type: "triangle", vol: 0.08, to: 620 }),
+    place: () => { tone(700, 0.06, { type: "triangle", vol: 0.1 }); tone(1050, 0.05, { vol: 0.05, at: 0.03 }); },
+    clear: () => tone(380, 0.08, { type: "triangle", vol: 0.07, to: 240 }),
+    word: () => [1047, 1319, 1568].forEach((f, i) => tone(f, 0.28, { vol: 0.11, at: i * 0.08 })),
+    wrong: () => { tone(200, 0.16, { type: "square", vol: 0.045, to: 140 }); tone(150, 0.2, { type: "square", vol: 0.04, at: 0.12, to: 110 }); },
+    hint: () => [1568, 2093, 2637].forEach((f, i) => tone(f, 0.18, { vol: 0.07, at: i * 0.06 })),
+    win: () => { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.3, { vol: 0.12, at: i * 0.1 })); [523, 659, 784].forEach((f) => tone(f, 0.9, { vol: 0.07, at: 0.55 })); },
+    ok: () => tone(880, 0.12, { vol: 0.08 })
+  };
+  const VIBES = { place: 8, pick: 5, clear: 12, word: 35, wrong: [40, 50, 40], hint: 18, win: [40, 60, 40, 60, 90], ok: 15 };
+  function feedback(name) {
+    if (fx.sound && SOUNDS[name]) { try { SOUNDS[name](); } catch (e) { /* audio blocked */ } }
+    if (fx.vib && VIBES[name]) { try { if (navigator.vibrate) navigator.vibrate(VIBES[name]); } catch (e) { /* no vibration */ } }
+  }
+  function openSettings() {
+    const sheet = $("#sheet");
+    sheet.hidden = false;
+    const row = (id, icon, label, on) => `<button class="toggle-row" id="${id}" role="switch" aria-checked="${on}">
+        <span class="t-icon">${icon}</span><span class="t-label">${label}</span><span class="switch ${on ? "on" : ""}"><i></i></span></button>`;
+    const draw = () => {
+      sheet.innerHTML = `<div class="sheet"><div class="sheet-head"><span class="gear-big">⚙️</span><div><b>${t().settings}</b></div></div>
+        ${row("sSound", fx.sound ? "🔊" : "🔇", t().sound, fx.sound)}
+        ${row("sVib", "📳", t().vibration, fx.vib)}
+        <button class="link" id="sClose">${t().close}</button></div>`;
+      $("#sSound").onclick = () => { fx.sound = !fx.sound; store.set("sound", fx.sound); feedback("ok"); draw(); syncSoundBtn(); };
+      $("#sVib").onclick = () => { fx.vib = !fx.vib; store.set("vib", fx.vib); feedback("ok"); draw(); };
+      $("#sClose").onclick = close;
+    };
+    const close = () => { sheet.hidden = true; sheet.innerHTML = ""; };
+    sheet.onclick = (e) => { if (e.target === sheet) close(); };
+    draw();
+  }
+  function syncSoundBtn() { const b = $("#soundBtn"); if (b) b.textContent = fx.sound ? "🔊" : "🔇"; }
 
   document.addEventListener("keydown", (e) => {
     if (!game || game.finished || !$("#sheet") || !$("#sheet").hidden) return;
