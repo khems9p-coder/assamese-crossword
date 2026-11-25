@@ -6,9 +6,11 @@ GitHub Pages and wrapped for the Play Store. Developed by **KBX Studios**.
 ## What's in the game
 
 - **Two languages** – অসমীয়া (one syllable per square, e.g. কা | জি | ৰ | ঙা) and English (one letter per square).
-- **Arrow-word grid** – every level uses the same 8 × 10 board. Picture clues sit inside the grid, with an arrow
-  pointing to their word (→ across, ↓ down); one clue square can hold two pictures.
-- **Picture clues** – every clue is a hand-drawn 2D doodle of the object instead of a written clue.
+- **Arrow-word grid** – every level uses the same 8 × 10 board in a clean blue & white style. The top row and left
+  column are clue squares, and more clue squares sit inside the grid. Each has an arrow to its word (→ across, ↓ down);
+  one square can hold two clues.
+- **Hint words and pictures** – most clues are a short hint word (e.g. TRUNK → ELEPHANT, ফলৰ ৰজা → আম); some are
+  shown as a glossy clip-art picture instead (about 55% on Easy, 40% on Medium, 30% on Hard).
 - **3 difficulty levels** – সহজ / Easy, মধ্যম / Medium, কঠিন / Hard, each with **Levels 1–20**.
   Level 1 is open; finishing a level unlocks the next.
 - **3 hints per level** – each hint either reveals one square or shows the word's name in the other language.
@@ -29,7 +31,7 @@ GitHub Pages and wrapped for the Play Store. Developed by **KBX Studios**.
 |---|---|
 | `index.html`, `style.css` | Page and look |
 | `app.js` | Game engine: syllable splitter, grid builder, levels, hints, screens |
-| `puzzles.js` | Word list: `[doodle, Assamese word, English word]` |
+| `puzzles.js` | Word list: `[picture, Assamese word, English word, Assamese hint, English hint]` |
 | `icons.js` | The doodle pictures (SVG) |
 | `config.js` | **Your settings** – developer name, Firebase login, ads |
 | `cloud.js`, `ads.js` | Sign-in/sync and ads (both stay off until set up in `config.js`) |
@@ -39,7 +41,7 @@ GitHub Pages and wrapped for the Play Store. Developed by **KBX Studios**.
 
 ## Adding words
 
-Add a line to any group in `puzzles.js`, e.g. `["mango", "আম", "MANGO"]`. The first item must be a
+Add a line to any group in `puzzles.js`, e.g. `["mango", "আম", "MANGO", "ফলৰ ৰজা", "KING OF FRUITS"]`. The first item must be a
 doodle name from `icons.js` (add a new doodle there if needed). Levels are generated from the whole
 word list automatically, so no grids need drawing by hand. **Adding or removing words changes the
 generated levels**, so do it before release, not after players have progress.

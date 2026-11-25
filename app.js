@@ -99,6 +99,7 @@
       if (!inB(cy, cx) || !inB(y + dy * (n - 1), x + dx * (n - 1))) return -1;
       const clue = g[cy][cx];
       if (clue && (clue.t !== "C" || clue[d])) return -1;
+      if (y === 0 || x === 0) return -1; // top row and left column hold clues only
       if (isL(y + dy * n, x + dx * n)) return -1;
       let cross = 0;
       for (let i = 0; i < n; i++) {
@@ -120,8 +121,8 @@
         if (at(yy + dx, xx + dy)) t++;
         if (at(yy - dx, xx - dy)) t++;
       }
-      // hugging the board edge keeps the board tidy
-      if (y - dy === 0 || x - dx === 0) t += 1;
+      // clues in the top row / left column, like a classic arrow-word
+      if (y - dy === 0 || x - dx === 0) t += 14;
       return t;
     }
     function put(it, y, x, d, cross) {
@@ -163,6 +164,8 @@
 
   // Three difficulty levels, 20 levels each. Every level picks its words from
   // the whole picture-word pool, limited by word length.
+  // share of clues shown as a picture instead of a hint word
+  const ICON_SHARE = [0.55, 0.4, 0.3];
   const DIFFS = [
     { id: "easy", as: "সহজ", en: "Easy", cap: 12, minLen: { as: 2, en: 3 }, maxLen: { as: 3, en: 5 }, decoys: 1, color: "#7cc576" },
     { id: "medium", as: "মধ্যম", en: "Medium", cap: 15, minLen: { as: 2, en: 3 }, maxLen: { as: 4, en: 7 }, decoys: 2, color: "#f7a541" },
@@ -172,11 +175,11 @@
 
   function wordPool(lang) {
     const seen = new Set(), out = [];
-    for (const th of window.THEMES) for (const [icon, as, en] of th.words) {
+    for (const th of window.THEMES) for (const [icon, as, en, asHint, enHint] of th.words) {
       if (seen.has(icon)) continue;
       seen.add(icon);
       const word = lang === "as" ? as : en;
-      out.push({ icon, word, alt: lang === "as" ? en : as, units: splitUnits(word, lang) });
+      out.push({ icon, word, alt: lang === "as" ? en : as, hint: lang === "as" ? asHint : enHint, units: splitUnits(word, lang) });
     }
     return out;
   }
@@ -201,6 +204,7 @@
       wd.id = i;
       wd.cells = wd.units.map((_, j) => [wd.y + (wd.dir === "down" ? j : 0), wd.x + (wd.dir === "across" ? j : 0)]);
       wd.clue = wd.dir === "down" ? [wd.y - 1, wd.x] : [wd.y, wd.x - 1];
+      wd.showIcon = r() < ICON_SHARE[diffIndex];
     });
     const sol = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
     const clues = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
@@ -222,7 +226,7 @@
   // ------------------------------------------------------------- doodles ---
   function doodle(key, cls = "") {
     const inner = (window.ICONS && window.ICONS[key]) || "";
-    return `<svg class="doodle ${cls}" viewBox="0 0 64 64" aria-hidden="true"><g filter="url(#wobble)" fill="none" stroke="#33302e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${inner}</g></svg>`;
+    return `<svg class="doodle ${cls}" viewBox="0 0 64 64" aria-hidden="true"><g filter="url(#gloss)" fill="none" stroke="#2c3e50" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</g></svg>`;
   }
 
   // -------------------------------------------------------------- state ---
@@ -415,8 +419,8 @@
   function drawBoard() {
     const { grid } = game;
     const board = $("#board");
-    const maxW = Math.min(window.innerWidth, 560) - 24 - 4;
-    const size = Math.max(30, Math.min(58, Math.floor((maxW - (grid.w - 1) * 2) / grid.w)));
+    const maxW = Math.min(window.innerWidth, 560) - 24 - 8;
+    const size = Math.max(30, Math.min(56, Math.floor((maxW - (grid.w - 1) * 2) / grid.w)));
     board.style.setProperty("--cell", size + "px");
     board.style.gridTemplateColumns = `repeat(${grid.w}, var(--cell))`;
     const act = grid.words[game.active];
@@ -427,7 +431,8 @@
     const clueHalf = (id, d, half) => {
       const w = grid.words[id];
       const cls = ["clue-half", half, id === game.active ? "on" : "", wordSolved(w) ? "done" : ""].join(" ");
-      return `<button class="${cls}" data-id="${id}" aria-label="${d === "across" ? t().across : t().down}">${doodle(w.icon, "cell-art")}<i class="arrow ${d}"></i></button>`;
+      const body = w.showIcon ? doodle(w.icon, "cell-art") : `<span class="hint-word" lang="${lang}">${esc(w.hint)}</span>`;
+      return `<button class="${cls}" data-id="${id}" aria-label="${esc(w.hint)}">${body}<i class="arrow ${d}"></i></button>`;
     };
     let html = "";
     for (let y = 0; y < grid.h; y++) for (let x = 0; x < grid.w; x++) {
@@ -440,7 +445,7 @@
       } else if (c) {
         const both = c.across != null && c.down != null;
         html += `<div class="cell clue${both ? " two" : ""}">${c.across != null ? clueHalf(c.across, "across", both ? "top" : "full") : ""}${c.down != null ? clueHalf(c.down, "down", both ? "bottom" : "full") : ""}</div>`;
-      } else html += `<div class="cell blank"></div>`;
+      } else html += `<div class="cell ${y === 0 || x === 0 ? "clue head" : "blank"}"></div>`;
     }
     board.innerHTML = html;
     board.querySelectorAll("button.cell").forEach((b) => {
@@ -479,7 +484,7 @@
     const meaning = game.shownMeaning.has(w.id) ? `<span class="meaning">${t().meaning}: <b lang="${lang === "as" ? "en" : "as"}">${w.alt}</b></span>` : "";
     $("#clueBar").innerHTML = `
       <button class="nav" id="prevW" aria-label="previous">‹</button>
-      <div class="clue-art ${wordSolved(w) ? "solved" : ""}">${doodle(w.icon, "big-art")}</div>
+      <div class="clue-art ${wordSolved(w) ? "solved" : ""}${w.showIcon ? "" : " text"}">${w.showIcon ? doodle(w.icon, "big-art") : `<span class="big-hint" lang="${lang}">${esc(w.hint)}</span>`}</div>
       <div class="clue-info">
         <span class="clue-num">${w.dir === "across" ? t().across + " →" : t().down + " ↓"}</span>
         <span class="clue-len">${fmtNum(w.units.length)}${t().squares}</span>

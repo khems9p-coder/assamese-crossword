@@ -3,20 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#fff4dc">
+  <meta name="theme-color" content="#eaf2fb">
   <meta name="description" content="Assamese and English picture crossword: look at the doodle, fill the word.">
   <title>শব্দজাল · Assamese Picture Crossword</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Noto+Sans+Bengali:wght@500;700;800&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- hand-drawn wobble used by every doodle -->
+  <!-- glossy clip-art finish used by every picture -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <filter id="wobble" x="-10%" y="-10%" width="120%" height="120%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7"/>
-      <feDisplacementMap in="SourceGraphic" scale="2.2"/>
+    <filter id="gloss" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.2" result="blur"/>
+      <feSpecularLighting in="blur" surfaceScale="4" specularConstant=".75" specularExponent="22" lighting-color="#ffffff" result="spec">
+        <fePointLight x="-30" y="-50" z="90"/>
+      </feSpecularLighting>
+      <feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn"/>
+      <feComposite in="SourceGraphic" in2="specIn" operator="arithmetic" k1="0" k2="1" k3=".55" k4="0" result="lit"/>
+      <feDropShadow in="lit" dx="0" dy="1.6" stdDeviation="1.2" flood-color="#1d3557" flood-opacity=".28"/>
     </filter>
   </svg>
   <div id="app"></div>
