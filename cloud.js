@@ -70,6 +70,11 @@
       }
     },
     async signOut() { if (auth) await auth.signOut(); },
+    async updateName(name) {
+      const u = this.user; if (!u) return;
+      await u.updateProfile({ displayName: name });
+      await db.collection("users").doc(u.uid).set({ name }, { merge: true });
+    },
     // merge local progress with the cloud copy, save both ways, return the merged copy
     async sync(local) {
       const u = this.user;

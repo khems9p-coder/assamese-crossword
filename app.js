@@ -279,7 +279,7 @@
       contactText: "পৰামৰ্শ, ভুল শব্দ বা নতুন শব্দৰ বাবে আমাক লিখক।", emailUs: "ইমেইল পঠিয়াওক", noEmail: "যোগাযোগৰ ইমেইল সোনকালে যোগ কৰা হ'ব।",
       shareText: "শব্দজাল — অসমীয়া আৰু ইংৰাজী শব্দজাল খেল খেলক!", copied: "লিংক কপি কৰা হ'ল",
       rateText: "খেলটো ভাল লাগিলে Play Store ত ৰেটিং দিয়ক। আপোনাৰ ৰেটিঙে আমাক সহায় কৰে।", rateNow: "এতিয়াই ৰেটিং দিয়ক",
-      nickname: "আপোনাৰ নাম", save: "ছেভ কৰক", stats: "অগ্ৰগতি", solved: "সমাধান", stars: "তৰা", plays: "খেল",
+      nickname: "আপোনাৰ নাম", save: "ছেভ কৰক", nameSaved: "নাম ছেভ হ'ল", hello: "নমস্কাৰ", stats: "অগ্ৰগতি", solved: "সমাধান", stars: "তৰা", plays: "খেল",
       email: "ইমেইল", password: "পাছৱৰ্ড", signInBtn: "লগ ইন", signUpBtn: "নতুন একাউণ্ট", forgot: "পাছৱৰ্ড পাহৰিলে?",
       resetSent: "পাছৱৰ্ড সলনিৰ ইমেইল পঠিওৱা হ'ল", syncNow: "এতিয়া ছিংক কৰক", savedOnline: "অগ্ৰগতি অনলাইনত সুৰক্ষিত",
       needEmail: "ইমেইল আৰু পাছৱৰ্ড (অন্ততঃ ৬টা আখৰ) লিখক", orWord: "নাইবা" },
@@ -291,7 +291,7 @@
       contactText: "Write to us with ideas, a wrong word, or words you would like added.", emailUs: "Send an email", noEmail: "A contact email will be added soon.",
       shareText: "Play Shabdajal — the Assamese & English crossword game!", copied: "Link copied",
       rateText: "Enjoying the game? Please rate it on the Play Store — it really helps.", rateNow: "Rate now",
-      nickname: "Your name", save: "Save", stats: "Progress", solved: "Solved", stars: "Stars", plays: "Plays",
+      nickname: "Your name", save: "Save", nameSaved: "Name saved", hello: "Hello", stats: "Progress", solved: "Solved", stars: "Stars", plays: "Plays",
       email: "Email", password: "Password", signInBtn: "Sign in", signUpBtn: "Create account", forgot: "Forgot password?",
       resetSent: "Password reset email sent", syncNow: "Sync now", savedOnline: "Progress saved online",
       needEmail: "Enter an email and a password of at least 6 characters", orWord: "or" }
@@ -309,7 +309,12 @@
     const sheet = $("#sheet");
     sheet.hidden = false;
     sheet.innerHTML = `<div class="sheet page">${html}</div>`;
-    const close = () => { sheet.hidden = true; sheet.innerHTML = ""; };
+    const close = () => {
+      const nm = sheet.querySelector("#pName");
+      if (nm) store.set("nickname", nm.value.trim());          // never lose a typed name
+      sheet.hidden = true; sheet.innerHTML = "";
+      if (!game) renderHome();
+    };
     sheet.onclick = (e) => { if (e.target === sheet) close(); };
     sheet.querySelectorAll("[data-close]").forEach((b) => (b.onclick = close));
     sheet.querySelectorAll("[data-back]").forEach((b) => (b.onclick = openMenu));
@@ -394,7 +399,7 @@
   function accountBadge() {
     const u = cloudUser();
     if (u && u.photoURL) return `<img src="${esc(u.photoURL)}" alt="" referrerpolicy="no-referrer">`;
-    const name = (u && u.displayName) || store.get("nickname", "");
+    const name = store.get("nickname", "") || (u && u.displayName) || "";
     if (name) return `<span class="initial">${esc(Array.from(name)[0])}</span>`;
     return `<span class="initial guest">👤</span>`;
   }
@@ -412,7 +417,7 @@
   function openProfile() {
     const u = cloudUser();
     const configured = window.Cloud && Cloud.configured;
-    const name = (u && u.displayName) || store.get("nickname", "");
+    const name = store.get("nickname", "") || (u && u.displayName) || "";
     const summary = progressSummary();
     const statRows = summary.map(({ L, row }) => `<div class="stat-block"><b>${L === "as" ? T.as.modeAs : T.en.modeEn}</b>
         ${row.map(({ D, solved, stars }) => `<div class="stat-row"><i class="dot" style="background:${D.color}"></i><span>${lang === "as" ? D.as : D.en}</span>
@@ -432,12 +437,23 @@
         ${Cloud.googleAllowed ? `<div class="or">${m().orWord}</div><button class="big google" id="pGoogle"><span class="g">G</span> ${t().signIn}</button>` : ""}`;
     showSheet(`${pageHead("👤", m().profile)}
       <div class="profile-top"><span class="account-btn big-avatar">${accountBadge()}</span>
-        <div class="name-edit"><input id="pName" value="${esc(name)}" placeholder="${m().nickname}" maxlength="24" ${u ? "readonly" : ""}>
-        ${u ? "" : `<button class="link" id="pNameSave">${m().save}</button>`}</div></div>
+        <form class="name-edit" id="pNameForm"><input id="pName" value="${esc(name)}" placeholder="${m().nickname}" maxlength="24" enterkeyhint="done" autocomplete="nickname">
+        <button class="link" type="submit" id="pNameSave">${m().save}</button></form></div>
       <h4>${m().stats}</h4>${statRows}
       <h4>${t().account}</h4>${account}
       <button class="link" data-close>${t().close}</button>`, () => {
-      if ($("#pNameSave")) $("#pNameSave").onclick = () => { store.set("nickname", $("#pName").value.trim()); feedback("ok"); openProfile(); };
+      // the name is kept as you type, on Done/Enter, and when the page closes
+      const saveName = (announce) => {
+        const v = $("#pName") ? $("#pName").value.trim() : null;
+        if (v === null || v === store.get("nickname", "")) return;
+        store.set("nickname", v);
+        const badge = document.querySelector(".profile-top .big-avatar"); if (badge) badge.innerHTML = accountBadge();
+        if (cloudUser() && Cloud.updateName) Cloud.updateName(v).catch(() => {});
+        if (announce) { feedback("ok"); toast(m().nameSaved); }
+      };
+      $("#pName").addEventListener("input", () => saveName(false));
+      $("#pName").addEventListener("blur", () => saveName(false));
+      $("#pNameForm").onsubmit = (e) => { e.preventDefault(); saveName(false); feedback("ok"); toast(m().nameSaved); $("#pName").blur(); };
       if ($("#pSync")) $("#pSync").onclick = () => syncCloud(true);
       if ($("#pOut")) $("#pOut").onclick = async () => { await Cloud.signOut(); openProfile(); };
       const creds = () => {
@@ -498,7 +514,7 @@
         <button class="account-btn" id="acct" aria-label="${t().account}">${accountBadge()}</button>
         <div class="logo">${["tiger", "rhino", "japi"].map((i) => doodle(i, "logo-art")).join("")}</div>
         <h1>${t().appTitle}</h1>
-        <p class="sub">${t().appSub}</p>
+        <p class="sub">${store.get("nickname", "") ? `${m().hello}, <b>${esc(store.get("nickname", ""))}</b>!` : t().appSub}</p>
         <div class="mode" role="tablist">
           <button class="${lang === "as" ? "on" : ""}" data-lang="as" lang="as">${T.as.modeAs}</button>
           <button class="${lang === "en" ? "on" : ""}" data-lang="en">${T.en.modeEn}</button>
@@ -1068,7 +1084,13 @@
   // Android back button: close an open sheet, else leave the game; false = let the app close
   function goBack() {
     const sh = $("#sheet");
-    if (sh && !sh.hidden) { sh.hidden = true; sh.innerHTML = ""; return true; }
+    if (sh && !sh.hidden) {
+      const nm = sh.querySelector("#pName");
+      if (nm) store.set("nickname", nm.value.trim());
+      sh.hidden = true; sh.innerHTML = "";
+      if (!game) renderHome();
+      return true;
+    }
     if (game) { save(); renderHome(); return true; }
     return false;
   }
