@@ -296,3 +296,11 @@ html[lang="as"] .cell { font-weight: 800; font-size: calc(var(--cell) * .5); }
 .cell.given.in-word { background: linear-gradient(#f3ecdc, #e9dcc0); }
 .hint-word.pattern { letter-spacing: 1px; text-transform: none; font-size: clamp(9px, calc(var(--cell) * .24), 13px); }
 .hint-word.pattern[lang="as"] { letter-spacing: 0; }
+/* log in / create account tabs */
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--card); padding: 4px; border-radius: 12px; box-shadow: var(--shadow); }
+.seg button { border: 0; background: none; padding: 9px; border-radius: 9px; font-weight: 800; color: var(--muted); }
+.seg button.on { background: var(--accent); color: #fff; }
+.login-form [hidden] { display: none; }
+.login-form[hidden] { display: none; }
+.name-edit { min-width: 0; }
+.profile-top { min-width: 0; }

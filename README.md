@@ -15,8 +15,11 @@ GitHub Pages and wrapped for the Play Store. Developed by **KBX Studios**.
   Level 1 is open; finishing a level unlocks the next.
 - **Menu (☰)** – My profile, Settings, Share, Rate us, About, Developer, Contact and Privacy policy. Set your contact
   email and Play Store links in `config.js`.
-- **My profile** – name, progress per language and difficulty, and sign-in (email + password; Google too on the
-  website) that saves level progress online once Firebase is set up.
+- **My profile** – name and progress per language and difficulty.
+- **Accounts** – *Create account* with a username and password, *Log in*, *Log out* and *Change password*. Accounts
+  live on the phone (password stored only as a salted PBKDF2 hash) and each player has their own progress; a guest's
+  progress carries into a new account. Once Firebase is set up in `config.js`, sign-in switches to online accounts
+  (email + password; Google too on the website) that sync progress across phones.
 - **Win and best-time celebrations** – fanfare, applause and confetti when a level is solved; a 🏆 *New best time!*
   banner with its own sound when a level is solved faster than before. Level cards show the best time.
 - **3 hints per level** – each hint either reveals one square or shows the word's name in the other language.

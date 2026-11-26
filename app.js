@@ -301,9 +301,18 @@
   }
 
   // ---------------------------------------------------------- storage ---
-  const store = {
+  // Progress, unfinished games and the player's name belong to whoever is logged in;
+  // a guest uses the plain keys. Everything else (language, sound…) is per phone.
+  const raw = {
     get(k, d) { try { const v = localStorage.getItem("axw:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem("axw:" + k, JSON.stringify(v)); } catch (e) { /* storage off */ } }
+    set(k, v) { try { if (v === null) localStorage.removeItem("axw:" + k); else localStorage.setItem("axw:" + k, JSON.stringify(v)); } catch (e) { /* storage off */ } }
+  };
+  const PER_PLAYER = /^(progress|save:|nickname)/;
+  let currentUser = raw.get("currentUser", null);
+  const scoped = (k) => (currentUser && PER_PLAYER.test(k) ? `u:${currentUser}:` : "") + k;
+  const store = {
+    get(k, d) { return raw.get(scoped(k), d); },
+    set(k, v) { raw.set(scoped(k), v); }
   };
 
   // ------------------------------------------------------------- doodles ---
@@ -342,12 +351,6 @@
   const DEV = (window.APP_CONFIG && window.APP_CONFIG.developer) || "KBX Studios";
   const esc = (v) => String(v || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const cloudUser = () => (window.Cloud && Cloud.user) || null;
-  function accountBadge() {
-    const u = cloudUser();
-    if (u && u.photoURL) return `<img src="${esc(u.photoURL)}" alt="" referrerpolicy="no-referrer">`;
-    if (u) return `<span class="initial">${esc((u.displayName || "?")[0])}</span>`;
-    return `<span class="initial guest">👤</span>`;
-  }
   // ------------------------------------------------------------ menu ---
   const CFG = window.APP_CONFIG || {};
   const M = {
@@ -359,7 +362,12 @@
       contactText: "পৰামৰ্শ, ভুল শব্দ বা নতুন শব্দৰ বাবে আমাক লিখক।", emailUs: "ইমেইল পঠিয়াওক", noEmail: "যোগাযোগৰ ইমেইল সোনকালে যোগ কৰা হ'ব।",
       shareText: "শব্দজাল — অসমীয়া আৰু ইংৰাজী শব্দজাল খেল খেলক!", copied: "লিংক কপি কৰা হ'ল",
       rateText: "খেলটো ভাল লাগিলে Play Store ত ৰেটিং দিয়ক। আপোনাৰ ৰেটিঙে আমাক সহায় কৰে।", rateNow: "এতিয়াই ৰেটিং দিয়ক",
-      nickname: "আপোনাৰ নাম", save: "ছেভ কৰক", nameSaved: "নাম ছেভ হ'ল", hello: "নমস্কাৰ", stats: "অগ্ৰগতি", solved: "সমাধান", stars: "তৰা", plays: "খেল",
+      nickname: "আপোনাৰ নাম", save: "ছেভ কৰক", nameSaved: "নাম ছেভ হ'ল", hello: "নমস্কাৰ",
+      username: "ব্যৱহাৰকাৰীৰ নাম (ইংৰাজীত)", confirmPw: "পাছৱৰ্ড পুনৰ লিখক", loggedInAs: "লগ ইন কৰা হৈছে:", loggedOut: "লগ আউট হ'ল",
+      changePw: "পাছৱৰ্ড সলনি", oldPw: "পুৰণি পাছৱৰ্ড", newPw: "নতুন পাছৱৰ্ড", pwChanged: "পাছৱৰ্ড সলনি হ'ল", welcome: "স্বাগতম",
+      localNote: "একাউণ্ট আৰু অগ্ৰগতি এই ফোনত সুৰক্ষিত থাকে। প্ৰতিজন খেলুৱৈৰ নিজা অগ্ৰগতি।",
+      badUser: "নাম ৩–২৪টা ইংৰাজী আখৰ বা সংখ্যাৰ হ'ব লাগে", pwShort: "পাছৱৰ্ড অন্ততঃ ৪টা আখৰৰ হ'ব লাগে",
+      userExists: "এই নামটো আগতে লোৱা হৈছে", badLogin: "নাম বা পাছৱৰ্ড ভুল", pwMismatch: "দুয়োটা পাছৱৰ্ড মিলা নাই", stats: "অগ্ৰগতি", solved: "সমাধান", stars: "তৰা", plays: "খেল",
       email: "ইমেইল", password: "পাছৱৰ্ড", signInBtn: "লগ ইন", signUpBtn: "নতুন একাউণ্ট", forgot: "পাছৱৰ্ড পাহৰিলে?",
       resetSent: "পাছৱৰ্ড সলনিৰ ইমেইল পঠিওৱা হ'ল", syncNow: "এতিয়া ছিংক কৰক", savedOnline: "অগ্ৰগতি অনলাইনত সুৰক্ষিত",
       needEmail: "ইমেইল আৰু পাছৱৰ্ড (অন্ততঃ ৬টা আখৰ) লিখক", orWord: "নাইবা" },
@@ -371,7 +379,12 @@
       contactText: "Write to us with ideas, a wrong word, or words you would like added.", emailUs: "Send an email", noEmail: "A contact email will be added soon.",
       shareText: "Play Shabdajal — the Assamese & English crossword game!", copied: "Link copied",
       rateText: "Enjoying the game? Please rate it on the Play Store — it really helps.", rateNow: "Rate now",
-      nickname: "Your name", save: "Save", nameSaved: "Name saved", hello: "Hello", stats: "Progress", solved: "Solved", stars: "Stars", plays: "Plays",
+      nickname: "Your name", save: "Save", nameSaved: "Name saved", hello: "Hello",
+      username: "Username", confirmPw: "Confirm password", loggedInAs: "Logged in as", loggedOut: "Logged out",
+      changePw: "Change password", oldPw: "Old password", newPw: "New password", pwChanged: "Password changed", welcome: "Welcome",
+      localNote: "Accounts and progress are kept safely on this phone. Each player has their own progress.",
+      badUser: "Username: 3–24 letters or numbers", pwShort: "Password must be at least 4 characters",
+      userExists: "That username is taken", badLogin: "Wrong username or password", pwMismatch: "Passwords do not match", stats: "Progress", solved: "Solved", stars: "Stars", plays: "Plays",
       email: "Email", password: "Password", signInBtn: "Sign in", signUpBtn: "Create account", forgot: "Forgot password?",
       resetSent: "Password reset email sent", syncNow: "Sync now", savedOnline: "Progress saved online",
       needEmail: "Enter an email and a password of at least 6 characters", orWord: "or" }
@@ -475,6 +488,68 @@
     });
   }
 
+  // ---------------------------------------------------- local accounts ---
+  // Accounts kept on this phone: a username and a password (stored only as a salted
+  // PBKDF2 hash). Each account has its own progress; logging out returns to the guest.
+  const accountsAll = () => raw.get("accounts", {});
+  const cleanUser = (u) => (u || "").trim().toLowerCase();
+  const toHex = (buf) => Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  async function hashPassword(user, pw, saltHex) {
+    const enc = new TextEncoder();
+    try {
+      const key = await crypto.subtle.importKey("raw", enc.encode(pw), "PBKDF2", false, ["deriveBits"]);
+      const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: enc.encode(saltHex + user), iterations: 60000 }, key, 256);
+      return "p2:" + toHex(bits);
+    } catch (e) {
+      // very old WebViews without Web Crypto: a simple salted hash
+      let h = 2166136261;
+      for (const ch of saltHex + user + pw + saltHex) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+      return "f1:" + h.toString(16);
+    }
+  }
+  function randomSalt() {
+    const b = new Uint8Array(16);
+    try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256); }
+    return toHex(b);
+  }
+  const Local = {
+    get user() { return currentUser; },
+    async create(username, name, pw) {
+      const u = cleanUser(username);
+      if (!/^[a-z0-9_.@-]{3,24}$/.test(u)) throw new Error("badUser");
+      if (pw.length < 4) throw new Error("pwShort");
+      const all = accountsAll();
+      if (all[u]) throw new Error("userExists");
+      const salt = randomSalt();
+      all[u] = { salt, hash: await hashPassword(u, pw, salt), name: (name || "").trim() || u, created: Date.now() };
+      raw.set("accounts", all);
+      // a new account starts with the guest's progress, so nothing is lost
+      for (const k of ["progress", "nickname"]) { const v = raw.get(k, null); if (v != null) raw.set(`u:${u}:${k}`, v); }
+      raw.set(`u:${u}:nickname`, all[u].name);
+      this.use(u);
+    },
+    async login(username, pw) {
+      const u = cleanUser(username);
+      const acc = accountsAll()[u];
+      if (!acc || (await hashPassword(u, pw, acc.salt)) !== acc.hash) throw new Error("badLogin");
+      this.use(u);
+    },
+    async changePassword(oldPw, newPw) {
+      const u = currentUser, all = accountsAll(), acc = all[u];
+      if (!acc || (await hashPassword(u, oldPw, acc.salt)) !== acc.hash) throw new Error("badLogin");
+      if (newPw.length < 4) throw new Error("pwShort");
+      acc.salt = randomSalt();
+      acc.hash = await hashPassword(u, newPw, acc.salt);
+      raw.set("accounts", all);
+    },
+    logout() { this.use(null); },
+    use(u) {
+      currentUser = u;
+      raw.set("currentUser", u);
+      levelCache.clear();
+    }
+  };
+
   // ---------------------------------------------------------- profile ---
   function accountBadge() {
     const u = cloudUser();
@@ -504,7 +579,22 @@
           <span class="bar"><span style="width:${Math.round((solved / LEVELS) * 100)}%;background:${D.color}"></span></span>
           <small>${fmtNum(solved)}/${fmtNum(LEVELS)} · ★${fmtNum(stars)}</small></div>`).join("")}</div>`).join("");
     let account;
-    if (!configured) account = `<p class="sheet-note">${t().notSetup}</p>`;
+    if (!configured && currentUser) account = `<p class="sheet-note ok-note">🔐 ${m().loggedInAs} <b>${esc(currentUser)}</b><br><small>${m().localNote}</small></p>
+        <div class="row-btns"><button class="big ghost" id="lPw">🔑 ${m().changePw}</button><button class="big ghost" id="lOut">${t().signOut}</button></div>
+        <form id="lPwForm" class="login-form" hidden>
+          <input id="lOld" type="password" autocomplete="current-password" placeholder="${m().oldPw}">
+          <input id="lNew" type="password" autocomplete="new-password" placeholder="${m().newPw}">
+          <button class="big" type="submit">${m().save}</button>
+        </form>`;
+    else if (!configured) account = `<div class="seg" role="tablist"><button class="on" id="tabIn" type="button">${m().signInBtn}</button><button id="tabUp" type="button">${m().signUpBtn}</button></div>
+        <form id="lForm" class="login-form" data-mode="in">
+          <input id="lUser" autocomplete="username" autocapitalize="off" placeholder="${m().username}" required>
+          <input id="lName" class="up-only" autocomplete="name" placeholder="${m().nickname}" hidden>
+          <input id="lPass" type="password" autocomplete="current-password" placeholder="${m().password}" required>
+          <input id="lPass2" class="up-only" type="password" autocomplete="new-password" placeholder="${m().confirmPw}" hidden>
+          <button class="big" type="submit" id="lSubmit">${m().signInBtn}</button>
+        </form>
+        <p class="sheet-note small">${m().localNote}</p>`;
     else if (u) account = `<p class="sheet-note ok-note">☁️ ${m().savedOnline}<br><small>${esc(u.email || "")}</small></p>
         <div class="row-btns"><button class="big ghost" id="pSync">🔄 ${m().syncNow}</button><button class="big ghost" id="pOut">${t().signOut}</button></div>`;
     else account = `<p class="sheet-note">${t().loginInfo}</p>
@@ -555,6 +645,37 @@
         try { await Cloud.resetPassword(em); toast(m().resetSent); } catch (err) { fail(err); }
       };
       if ($("#pGoogle")) $("#pGoogle").onclick = async () => { try { await Cloud.signIn(); openProfile(); } catch (err) { fail(err); } };
+      // ---- accounts on this phone ----
+      const lerr = (e) => { feedback("wrong"); toast(m()[e && e.message] || t().loginFail); };
+      const setMode = (mode) => {
+        $("#lForm").dataset.mode = mode;
+        $("#tabIn").classList.toggle("on", mode === "in"); $("#tabUp").classList.toggle("on", mode === "up");
+        document.querySelectorAll("#lForm .up-only").forEach((el) => (el.hidden = mode !== "up"));
+        $("#lPass").autocomplete = mode === "up" ? "new-password" : "current-password";
+        $("#lSubmit").textContent = mode === "up" ? m().signUpBtn : m().signInBtn;
+      };
+      if ($("#lForm")) {
+        $("#tabIn").onclick = () => setMode("in");
+        $("#tabUp").onclick = () => setMode("up");
+        $("#lForm").onsubmit = async (e) => {
+          e.preventDefault();
+          const user = $("#lUser").value, pw = $("#lPass").value;
+          try {
+            if ($("#lForm").dataset.mode === "up") {
+              if (pw !== $("#lPass2").value) throw new Error("pwMismatch");
+              await Local.create(user, $("#lName").value || $("#pName").value, pw);
+            } else await Local.login(user, pw);
+            feedback("word"); toast(`${m().welcome}, ${store.get("nickname", "") || currentUser}!`);
+            openProfile();
+          } catch (err) { lerr(err); }
+        };
+      }
+      if ($("#lOut")) $("#lOut").onclick = () => { Local.logout(); feedback("ok"); toast(m().loggedOut); openProfile(); };
+      if ($("#lPw")) $("#lPw").onclick = () => { $("#lPwForm").hidden = !$("#lPwForm").hidden; };
+      if ($("#lPwForm")) $("#lPwForm").onsubmit = async (e) => {
+        e.preventDefault();
+        try { await Local.changePassword($("#lOld").value, $("#lNew").value); feedback("ok"); toast(m().pwChanged); openProfile(); } catch (err) { lerr(err); }
+      };
     });
   }
   async function syncCloud(showToast) {
