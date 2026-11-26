@@ -169,17 +169,20 @@
   const DIFFS = [
     { id: "easy", as: "সহজ", en: "Easy", cap: 12, minLen: { as: 2, en: 3 }, maxLen: { as: 3, en: 5 }, decoys: 1, color: "#7cc576" },
     { id: "medium", as: "মধ্যম", en: "Medium", cap: 15, minLen: { as: 2, en: 3 }, maxLen: { as: 4, en: 7 }, decoys: 2, color: "#f7a541" },
-    { id: "hard", as: "কঠিন", en: "Hard", cap: 19, minLen: { as: 2, en: 3 }, maxLen: { as: 7, en: 9 }, decoys: 3, color: "#ef5b5b" }
+    { id: "hard", as: "কঠিন", en: "Hard", cap: 19, minLen: { as: 2, en: 3 }, maxLen: { as: 9, en: 9 }, decoys: 3, color: "#ef5b5b" }
   ];
   const LEVELS = 20;
 
   function wordPool(lang) {
     const seen = new Set(), out = [];
-    for (const th of window.THEMES) for (const [icon, as, en, asHint, enHint] of th.words) {
-      if (seen.has(icon)) continue;
-      seen.add(icon);
-      const word = lang === "as" ? as : en;
-      out.push({ icon, word, alt: lang === "as" ? en : as, hint: lang === "as" ? asHint : enHint, units: splitUnits(word, lang) });
+    for (const th of window.THEMES) for (const [icon, as, en, asHint, enHint, asClue, enClue] of th.words) {
+      const id = icon || as;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      // a crossword answer has no spaces or punctuation: প্ৰাচীন অসম → প্ৰাচীনঅসম, Ahom kingdom → AHOMKINGDOM
+      const word = lang === "as" ? as.replace(/[\s\-'’.]+/g, "") : en.replace(/[^A-Za-z]/g, "").toUpperCase();
+      out.push({ icon, word, alt: lang === "as" ? en : as, hint: lang === "as" ? asHint : enHint,
+        clueText: (lang === "as" ? asClue : enClue) || null, group: lang === "as" ? th.as : th.en, units: splitUnits(word, lang) });
     }
     return out;
   }
@@ -204,7 +207,7 @@
       wd.id = i;
       wd.cells = wd.units.map((_, j) => [wd.y + (wd.dir === "down" ? j : 0), wd.x + (wd.dir === "across" ? j : 0)]);
       wd.clue = wd.dir === "down" ? [wd.y - 1, wd.x] : [wd.y, wd.x - 1];
-      wd.showIcon = r() < ICON_SHARE[diffIndex];
+      wd.showIcon = !!wd.icon && r() < ICON_SHARE[diffIndex];
     });
     const sol = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
     const clues = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
@@ -225,7 +228,7 @@
 
   // ------------------------------------------------------------- doodles ---
   function doodle(key, cls = "") {
-    const inner = (window.ICONS && window.ICONS[key]) || "";
+    const inner = (key && window.ICONS && window.ICONS[key]) || "";
     return `<svg class="doodle ${cls}" viewBox="0 0 64 64" aria-hidden="true"><g filter="url(#gloss)" fill="none" stroke="#2c3e50" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</g></svg>`;
   }
 
@@ -250,7 +253,7 @@
     return levelCache.get(k);
   }
   function cardIcon(d, l) {
-    const pool = wordPool(lang);
+    const pool = wordPool(lang).filter((w) => w.icon);
     return pool[Math.floor(rng(`${lang}-${d}-${l}-card`)() * pool.length)].icon;
   }
   const levelKey = (d, l) => `${lang}:${DIFFS[d].id}:${l}`;
@@ -488,6 +491,7 @@
       <div class="clue-info">
         <span class="clue-num">${w.dir === "across" ? t().across + " →" : t().down + " ↓"}</span>
         <span class="clue-len">${fmtNum(w.units.length)}${t().squares}</span>
+        ${w.clueText ? `<span class="full-clue" lang="${lang}">${esc(w.clueText)}</span>` : ""}
         ${meaning}
       </div>
       <button class="nav" id="nextW" aria-label="next">›</button>`;
@@ -648,7 +652,7 @@
     const sheet = $("#sheet");
     sheet.hidden = false;
     sheet.innerHTML = `<div class="sheet">
-      <div class="sheet-head">${doodle(w.icon, "sheet-art")}<div><b>${t().hints}</b><small>${left > 0 ? t().hintLeft(left) : t().noHints}</small></div></div>
+      <div class="sheet-head">${w.icon ? doodle(w.icon, "sheet-art") : `<span class="sheet-art text" lang="${lang}">${esc(w.hint)}</span>`}<div><b>${t().hints}</b><small>${left > 0 ? t().hintLeft(left) : t().noHints}</small></div></div>
       <div class="hint-dots">${[0, 1, 2].map((i) => `<i class="${i < left ? "on" : ""}">💡</i>`).join("")}</div>
       <button class="big" id="hCell" ${left <= 0 || wordSolved(w) ? "disabled" : ""}>🔍 ${t().revealCell}</button>
       <button class="big" id="hMean" ${left <= 0 || game.shownMeaning.has(w.id) ? "disabled" : ""}>🌐 ${t().showMeaning}</button>
@@ -680,7 +684,7 @@
     const sheet = $("#sheet");
     sheet.hidden = false;
     sheet.innerHTML = `<form class="sheet" id="typeForm">
-      <div class="sheet-head">${doodle(w.icon, "sheet-art")}<div><b>${w.dir === "across" ? t().across + " →" : t().down + " ↓"}</b><small>${fmtNum(w.units.length)}${t().squares}</small></div></div>
+      <div class="sheet-head">${w.icon ? doodle(w.icon, "sheet-art") : `<span class="sheet-art text" lang="${lang}">${esc(w.hint)}</span>`}<div><b>${w.dir === "across" ? t().across + " →" : t().down + " ↓"}</b><small>${fmtNum(w.units.length)}${t().squares}</small></div></div>
       <input id="typeIn" autocomplete="off" autocapitalize="${lang === "en" ? "characters" : "off"}" placeholder="${t().typePh}" lang="${lang}">
       <button class="big" type="submit">${t().fill}</button>
       <button class="link" type="button" id="tClose">${t().cancel}</button></form>`;

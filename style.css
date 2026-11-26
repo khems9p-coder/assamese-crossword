@@ -146,6 +146,8 @@ html[lang="as"] .cell { font-weight: 800; font-size: calc(var(--cell) * .5); }
 .clue-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .clue-num { font-weight: 900; font-size: 1.02rem; }
 .clue-len { color: var(--muted); font-weight: 700; }
+.full-clue { font-size: .92rem; font-weight: 700; color: var(--clue-ink); line-height: 1.3; }
+.full-clue[lang="as"] { font-size: .98rem; }
 .meaning { font-size: .9rem; background: #e6f0ff; color: var(--accent-dark); border-radius: 8px; padding: 3px 8px; align-self: flex-start; }
 
 /* ---------- letter suggestion tiles ---------- */
@@ -173,6 +175,8 @@ html[lang="as"] .cell { font-weight: 800; font-size: calc(var(--cell) * .5); }
 .sheet-head { display: flex; align-items: center; gap: 12px; font-weight: 800; }
 .sheet-head small { display: block; color: var(--muted); font-weight: 600; }
 .sheet-art { width: 58px; height: 58px; background: var(--clue); border-radius: 12px; padding: 5px; }
+.sheet-art.text { width: auto; min-width: 58px; max-width: 45%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: .85rem; text-align: center; text-transform: uppercase; color: var(--clue-ink); padding: 6px 10px; }
+.sheet-art.text[lang="as"] { text-transform: none; font-size: .95rem; }
 .sheet-note { margin: 0; color: var(--muted); line-height: 1.5; }
 .hint-dots { display: flex; gap: 8px; justify-content: center; font-size: 1.6rem; }
 .hint-dots i { font-style: normal; filter: grayscale(1); opacity: .35; }
