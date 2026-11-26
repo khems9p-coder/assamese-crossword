@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -88,12 +89,16 @@ public class MainActivity extends ComponentActivity {
             }
         });
 
+        // Share, rate and open links from the game's menu.
+        web.addJavascriptInterface(new AppBridge(), "AndroidApp");
+
         // Back button: close a sheet or go back to the level list; on the home screen, leave the app.
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 web.evaluateJavascript("(window.AXW && window.AXW.back) ? window.AXW.back() : false", result -> {
                     if (!"true".equals(result)) {
+                        if (web.canGoBack()) { web.goBack(); return; }   // e.g. back from the privacy page
                         setEnabled(false);
                         getOnBackPressedDispatcher().onBackPressed();
                         setEnabled(true);
@@ -106,6 +111,56 @@ public class MainActivity extends ComponentActivity {
             web.restoreState(savedInstanceState);
         } else {
             web.loadUrl(START_URL);
+        }
+    }
+
+    /** Called from the game's JavaScript as window.AndroidApp. */
+    private class AppBridge {
+        @JavascriptInterface
+        public void share(String text) {
+            runOnUiThread(() -> {
+                Intent send = new Intent(Intent.ACTION_SEND);
+                send.setType("text/plain");
+                send.putExtra(Intent.EXTRA_TEXT, text);
+                startActivity(Intent.createChooser(send, getString(R.string.appName)));
+            });
+        }
+
+        @JavascriptInterface
+        public void rate() {
+            runOnUiThread(() -> {
+                String pkg = getPackageName();
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + pkg)));
+                } catch (Exception e) {
+                    openLink("https://play.google.com/store/apps/details?id=" + pkg);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void openUrl(String url) {
+            runOnUiThread(() -> openLink(url));
+        }
+
+        @JavascriptInterface
+        public String version() {
+            try {
+                return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            } catch (Exception e) {
+                return "";
+            }
+        }
+    }
+
+    private void openLink(String url) {
+        if (url == null) return;
+        Uri uri = Uri.parse(url);
+        String scheme = uri.getScheme();
+        if (!"https".equals(scheme) && !"http".equals(scheme) && !"mailto".equals(scheme) && !"market".equals(scheme)) return;
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, uri));
+        } catch (Exception ignored) {
         }
     }
 

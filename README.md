@@ -13,10 +13,17 @@ GitHub Pages and wrapped for the Play Store. Developed by **KBX Studios**.
   shown as a glossy clip-art picture instead (about 55% on Easy, 40% on Medium, 30% on Hard).
 - **3 difficulty levels** – সহজ / Easy, মধ্যম / Medium, কঠিন / Hard, each with **Levels 1–20**.
   Level 1 is open; finishing a level unlocks the next.
+- **Menu (☰)** – My profile, Settings, Share, Rate us, About, Developer, Contact and Privacy policy. Set your contact
+  email and Play Store links in `config.js`.
+- **My profile** – name, progress per language and difficulty, and sign-in (email + password; Google too on the
+  website) that saves level progress online once Firebase is set up.
+- **Win and best-time celebrations** – fanfare, applause and confetti when a level is solved; a 🏆 *New best time!*
+  banner with its own sound when a level is solved faster than before. Level cards show the best time.
 - **3 hints per level** – each hint either reveals one square or shows the word's name in the other language.
   Stars: ★★★ with no hints, ★★ with 1–2 hints, ★ with all 3.
 - **Letter suggestions** – tiles below the board show the missing letters (or syllables) of the selected word
-  plus a few decoys (1 on Easy, 2 on Medium, 3 on Hard). Tap a tile to fill the selected square, or **drag it onto
+  mixed with decoys, in a jumbled order (6 tiles on Easy, 8 on Medium, 9 on Hard for a fresh word). In Assamese most
+  decoys are look-alikes of the answer's own syllables (কা → কি, কু, কো), so short words are not easy to guess. Tap a tile to fill the selected square, or **drag it onto
   any square**. Placed letters can be dragged to another square, or off the board to remove them. A "Type" box is there for anyone with an Assamese keyboard.
 - **Sound and vibration** – effects for placing, picking up and removing letters, a chime for each finished word,
   a buzz for a wrong word, a sparkle for hints and a tune when the level is done. Switch either off in ⚙️ Settings

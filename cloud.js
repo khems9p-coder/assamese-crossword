@@ -1,4 +1,4 @@
-// Optional Google sign-in with Firebase. Progress is stored in Firestore at
+// Optional sign-in with Firebase (email + password everywhere; Google on the website). Progress is stored in Firestore at
 // users/{uid} as { progress: { "<lang>:<difficulty>:<level>": {stars, best} }, name, updatedAt }.
 // If APP_CONFIG.firebase is null, everything here stays switched off.
 (function () {
@@ -33,7 +33,8 @@
     const out = Object.assign({}, a);
     for (const k in b || {}) {
       const x = out[k], y = b[k];
-      out[k] = !x ? y : { stars: Math.max(x.stars || 0, y.stars || 0), best: Math.min(x.best || 1e9, y.best || 1e9) };
+      out[k] = !x ? y : { stars: Math.max(x.stars || 0, y.stars || 0), best: Math.min(x.best || 1e9, y.best || 1e9),
+        plays: Math.max(x.plays || 0, y.plays || 0), at: Math.max(x.at || 0, y.at || 0) };
     }
     return out;
   }
@@ -43,6 +44,22 @@
     get user() { return auth && auth.currentUser; },
     init,
     onChange(fn) { listeners.push(fn); },
+    // Google's sign-in page is not allowed inside an app's own WebView, so the
+    // Android app offers email + password only.
+    get googleAllowed() { return !!cfg && location.hostname !== "appassets.androidplatform.net"; },
+    async signInEmail(email, password) {
+      if (!(await init())) throw new Error("not-configured");
+      await auth.signInWithEmailAndPassword(email.trim(), password);
+    },
+    async signUpEmail(name, email, password) {
+      if (!(await init())) throw new Error("not-configured");
+      const cred = await auth.createUserWithEmailAndPassword(email.trim(), password);
+      if (name && cred.user) await cred.user.updateProfile({ displayName: name.trim() });
+    },
+    async resetPassword(email) {
+      if (!(await init())) throw new Error("not-configured");
+      await auth.sendPasswordResetEmail(email.trim());
+    },
     async signIn() {
       if (!(await init())) throw new Error("not-configured");
       const provider = new firebase.auth.GoogleAuthProvider();
