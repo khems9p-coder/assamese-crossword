@@ -49,8 +49,9 @@ GitHub Pages and wrapped for the Play Store. Developed by **KBX Studios**.
 ## Adding words
 
 Add a line to any group in `puzzles.js`, e.g. `["mango", "আম", "MANGO", "ফলৰ ৰজা", "KING OF FRUITS"]`. The first item must be a
-doodle name from `icons.js` (add a new doodle there if needed). Levels are generated from the whole
-word list automatically, so no grids need drawing by hand. **Adding or removing words changes the
+doodle name from `icons.js` (add a new doodle there if needed). Then run `node tools/build-levels.js`: it plans all 120 levels together so each word is used as
+few times as possible and never in two levels in a row, and writes `levels.js`. (GitHub Actions runs it too before
+building the Android app.) **Adding or removing words changes the
 generated levels**, so do it before release, not after players have progress.
 
 ## Publish on GitHub Pages

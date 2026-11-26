@@ -181,28 +181,19 @@
       seen.add(id);
       // a crossword answer has no spaces or punctuation: প্ৰাচীন অসম → প্ৰাচীনঅসম, Ahom kingdom → AHOMKINGDOM
       const word = lang === "as" ? as.replace(/[\s\-'’.]+/g, "") : en.replace(/[^A-Za-z]/g, "").toUpperCase();
-      out.push({ icon, word, alt: lang === "as" ? en : as, hint: lang === "as" ? asHint : enHint,
+      out.push({ key: id, icon, word, alt: lang === "as" ? en : as, hint: lang === "as" ? asHint : enHint,
         clueText: (lang === "as" ? asClue : enClue) || null, group: lang === "as" ? th.as : th.en, units: splitUnits(word, lang) });
     }
     return out;
   }
 
-  function buildLevel(diffIndex, level, lang) {
-    const D = DIFFS[diffIndex];
-    const r = rng(`${lang}-${D.id}-${level}-arrow`);
-    const pool = wordPool(lang).filter((it) => it.units.length >= D.minLen[lang] && it.units.length <= D.maxLen[lang]);
-    // later levels in a difficulty get a few more words
-    const cap = D.cap - 3 + Math.round((3 * (level - 1)) / (LEVELS - 1));
-    let best = null;
-    for (let attempt = 0; attempt < 70; attempt++) {
-      const order = shuffle(pool, r);
-      const L = arrowLayout(order, r, GRID_W, GRID_H, cap, diffIndex === 2);
-      const score = L.placed.length * 40 + L.letters * 3 + L.crossings * 12;
-      if (!best || score > best.score) best = { score, L };
-    }
-    const { L } = best;
+  const levelCap = (D, level) => D.cap - 3 + Math.round((3 * (level - 1)) / (LEVELS - 1));
+  const eligible = (D, lang) => wordPool(lang).filter((it) => it.units.length >= D.minLen[lang] && it.units.length <= D.maxLen[lang]);
+
+  // Turn placed words into the grid the game plays on.
+  function finishGrid(placed, diffIndex, r) {
     // reading order: top to bottom, left to right; across before down
-    const words = L.placed.slice().sort((a, b) => a.y - b.y || a.x - b.x || (a.dir === "across" ? -1 : 1));
+    const words = placed.slice().sort((a, b) => a.y - b.y || a.x - b.x || (a.dir === "across" ? -1 : 1));
     words.forEach((wd, i) => {
       wd.id = i;
       wd.cells = wd.units.map((_, j) => [wd.y + (wd.dir === "down" ? j : 0), wd.x + (wd.dir === "across" ? j : 0)]);
@@ -211,13 +202,84 @@
     });
     const sol = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
     const clues = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
-    words.forEach((wd) => {
-      wd.cells.forEach(([y, x], j) => (sol[y][x] = wd.units[j]));
+    for (const wd of words) {
       const [cy, cx] = wd.clue;
+      if (cy < 0 || cx < 0 || sol[cy][cx] != null) return null;
+      for (let j = 0; j < wd.cells.length; j++) {
+        const [y, x] = wd.cells[j];
+        if (y >= GRID_H || x >= GRID_W || clues[y][x] || (sol[y][x] != null && sol[y][x] !== wd.units[j])) return null;
+        sol[y][x] = wd.units[j];
+      }
       clues[cy][cx] = clues[cy][cx] || {};
+      if (clues[cy][cx][wd.dir] != null) return null;
       clues[cy][cx][wd.dir] = wd.id;
-    });
+    }
     return { w: GRID_W, h: GRID_H, sol, clues, words };
+  }
+
+  // Levels come from levels.js, planned all together so that words repeat as little as
+  // possible (tools/build-levels.js). A level whose words have since changed is built here.
+  function buildLevel(diffIndex, level, lang) {
+    const D = DIFFS[diffIndex];
+    const planned = window.LEVEL_PLAN && window.LEVEL_PLAN.levels && window.LEVEL_PLAN.levels[`${lang}-${D.id}-${level}`];
+    if (planned) {
+      const byKey = new Map(wordPool(lang).map((w) => [w.key, w]));
+      const placed = [];
+      let ok = true;
+      for (const [k, word, y, x, d] of planned) {
+        const it = byKey.get(k);
+        if (!it || it.word !== word) { ok = false; break; }
+        placed.push({ ...it, y, x, dir: d ? "down" : "across" });
+      }
+      const grid = ok && finishGrid(placed, diffIndex, rng(`${lang}-${D.id}-${level}-icons`));
+      if (grid) return grid;
+    }
+    return buildLevelLive(diffIndex, level, lang);
+  }
+
+  function buildLevelLive(diffIndex, level, lang) {
+    const D = DIFFS[diffIndex];
+    const r = rng(`${lang}-${D.id}-${level}-arrow`);
+    const pool = eligible(D, lang);
+    const cap = levelCap(D, level);
+    let best = null;
+    for (let attempt = 0; attempt < 70; attempt++) {
+      const L = arrowLayout(shuffle(pool, r), r, GRID_W, GRID_H, cap, diffIndex === 2);
+      const score = L.placed.length * 40 + L.letters * 3 + L.crossings * 12;
+      if (!best || score > best.score) best = { score, L };
+    }
+    return finishGrid(best.L.placed, diffIndex, rng(`${lang}-${D.id}-${level}-icons`));
+  }
+
+  // Plan every level of one language together: each level takes the least-used words
+  // first and none from the level just before it, so words repeat as little as possible.
+  const REUSE_COST = 9;
+  function planAll(lang, attempts = 80) {
+    const usage = new Map();
+    const levels = {};
+    DIFFS.forEach((D, d) => {
+      const pool = eligible(D, lang);
+      let prev = new Set();
+      for (let l = 1; l <= LEVELS; l++) {
+        const r = rng(`${lang}-${D.id}-${l}-plan`);
+        const cap = levelCap(D, l);
+        let best = null;
+        for (let attempt = 0; attempt < attempts; attempt++) {
+          const order = shuffle(pool, r).filter((w) => !prev.has(w.key))
+            .sort((a, b) => (usage.get(a.key) || 0) - (usage.get(b.key) || 0));
+          const L = arrowLayout(order, r, GRID_W, GRID_H, cap, d === 2);
+          // a word already used costs a little; one used often costs more
+          const reuse = L.placed.reduce((s, w) => s + (usage.get(w.key) || 0), 0);
+          const score = L.placed.length * 40 + L.letters * 3 + L.crossings * 12 - reuse * REUSE_COST;
+          if (!best || score > best.score) best = { score, L };
+        }
+        const placed = best.L.placed;
+        placed.forEach((w) => usage.set(w.key, (usage.get(w.key) || 0) + 1));
+        prev = new Set(placed.map((w) => w.key));
+        levels[`${lang}-${D.id}-${l}`] = placed.map((w) => [w.key, w.word, w.y, w.x, w.dir === "down" ? 1 : 0]);
+      }
+    });
+    return levels;
   }
 
   // ---------------------------------------------------------- storage ---
@@ -539,10 +601,13 @@
   function startGame(d, level, fresh) {
     const grid = getLevel(d, level);
     const saveKey = "save:" + levelKey(d, level);
-    const saved = fresh ? null : store.get(saveKey, null);
+    const sig = grid.words.map((w) => w.word + w.y + w.x + w.dir[0]).join("|");
+    let saved = fresh ? null : store.get(saveKey, null);
+    if (saved && saved.sig !== sig) saved = null; // the level's words have changed since
+
     const fill = grid.sol.map((row, y) => row.map((u, x) => (u == null ? null : (saved && saved.fill && saved.fill[y] && saved.fill[y][x]) || "")));
     game = {
-      diff: d, level, grid, fill, saveKey, seed: levelKey(d, level),
+      diff: d, level, grid, fill, saveKey, sig, seed: levelKey(d, level),
       revealed: new Set(saved ? saved.revealed || [] : []),
       hintsUsed: saved ? saved.hintsUsed || 0 : 0,
       seconds: saved ? saved.seconds || 0 : 0,
@@ -559,7 +624,7 @@
 
   function save() {
     if (!game || game.finished) return;
-    store.set(game.saveKey, { fill: game.fill, revealed: [...game.revealed], hintsUsed: game.hintsUsed, seconds: game.seconds, shownMeaning: [...game.shownMeaning] });
+    store.set(game.saveKey, { sig: game.sig, fill: game.fill, revealed: [...game.revealed], hintsUsed: game.hintsUsed, seconds: game.seconds, shownMeaning: [...game.shownMeaning] });
   }
 
   function startTimer() {
@@ -1094,7 +1159,7 @@
     if (game) { save(); renderHome(); return true; }
     return false;
   }
-  window.AXW = { splitUnits, buildLevel, DIFFS, LEVELS, back: goBack, inApp: IN_APP };
+  window.AXW = { splitUnits, buildLevel, buildLevelLive, planAll, DIFFS, LEVELS, back: goBack, inApp: IN_APP };
 
   if (app) renderHome();
   if (window.Cloud && Cloud.configured) {
