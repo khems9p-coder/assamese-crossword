@@ -16,7 +16,7 @@ window.THEMES = [
   { id: "birds", as: "চৰাই আৰু পোক", en: "Birds & bugs", words: [
     ["duck", "হাঁহ", "DUCK", "জলচৰ", "QUACK"], ["rooster", "কুকুৰা", "ROOSTER", "পুৱাৰ ডাক", "DAWN CALL"], ["owl", "ফেঁচা", "OWL", "নিশাচৰ", "NIGHT BIRD"],
     ["parrot", "ভাটৌ", "PARROT", "কথা কয়", "TALKS"], ["crow", "কাউৰী", "CROW", "কা কা", "CAW"], ["pigeon", "কপৌ", "PIGEON", "শান্তিৰ চিন", "PEACE BIRD"],
-    ["butterfly", "পখিলা", "BUTTERFLY", "ৰঙীন পাখি", "WINGS"], ["bee", "মৌমাখি", "BEE", "মৌ", "HONEY MAKER"], ["ant", "পৰুৱা", "ANT", "সৰু পোক", "TINY WORKER"]
+    ["butterfly", "পখিলা", "BUTTERFLY", "ৰঙীন পাখি", "WINGS"], ["bee", "মৌমাখি", "BEE", "গুণগুণায়", "HONEY MAKER"], ["ant", "পৰুৱা", "ANT", "সৰু পোক", "TINY WORKER"]
   ]},
   { id: "food", as: "খাদ্য", en: "Food", words: [
     ["rice", "ভাত", "RICE", "চাউল", "GRAIN"], ["tea", "চাহ", "TEA", "গৰম পানীয়", "HOT DRINK"], ["mango", "আম", "MANGO", "ফলৰ ৰজা", "KING OF FRUITS"],
@@ -25,7 +25,7 @@ window.THEMES = [
     ["pineapple", "আনাৰস", "PINEAPPLE", "কাঁইটীয়া ফল", "SPIKY FRUIT"]
   ]},
   { id: "body", as: "শৰীৰ", en: "The body", words: [
-    ["eye", "চকু", "EYE", "দৃষ্টি", "SEE"], ["ear", "কাণ", "EAR", "শুনা", "HEAR"], ["nose", "নাক", "NOSE", "গোন্ধ", "SMELL"],
+    ["eye", "চকু", "EYE", "দৃষ্টি", "SEE"], ["ear", "কাণ", "EAR", "শুনা", "LISTEN"], ["nose", "নাক", "NOSE", "গোন্ধ", "SMELL"],
     ["tooth", "দাঁত", "TOOTH", "চোবোৱা", "BITE"], ["hand", "হাত", "HAND", "পাঁচ আঙুলি", "FIVE FINGERS"], ["foot", "ভৰি", "FOOT", "খোজ", "WALK"],
     ["hair", "চুলি", "HAIR", "মূৰত গজে", "ON HEAD"], ["lips", "ওঁঠ", "LIPS", "মুখ", "MOUTH"], ["bone", "হাড়", "BONE", "কংকাল", "SKELETON"]
   ]},
@@ -85,11 +85,11 @@ window.THEMES = [
   ]},
   { id: "assam", as: "আমাৰ অসম", en: "Our Assam", words: [
     ["japi", "জাপি", "JAPI", "টুপী", "ASSAM HAT"], ["dhol", "ঢোল", "DHOL", "বিহুৰ বাদ্য", "DRUM"], ["pepa", "পেঁপা", "PEPA", "মহৰ শিং", "HORN PIPE"],
-    ["gamosa", "গামোচা", "GAMOSA", "বিহুৱান", "TOWEL"], ["xorai", "শৰাই", "XORAI", "বটা", "OFFERING TRAY"], ["bamboo", "বাঁহ", "BAMBOO", "বাঁহনি", "TALL GRASS"],
+    ["gamosa", "গামোচা", "GAMOSA", "বিহুৱান", "TOWEL"], ["xorai", "শৰাই", "XORAI", "বটা", "OFFERING TRAY"], ["bamboo", "বাঁহ", "BAMBOO", "দীঘল ঘাঁহ", "TALL GRASS"],
     ["rhino", "গঁড়", "RHINO", "এশিঙীয়া", "ONE HORN"], ["tea", "চাহ", "TEA", "গৰম পানীয়", "HOT DRINK"], ["boat", "নাও", "BOAT", "বঠা", "OARS"]
   ]},
   { id: "birds", as: "অসমৰ চৰাই", en: "Birds of Assam", words: [
-    [null,  "দেওহাঁহ", "Wood duck", "ৰাজ্যিক চৰাই", "STATE BIRD", "অসমৰ ৰাজ্যিক চৰাই", "State bird of Assam (white-winged wood duck)"],
+    [null,  "দেওহাঁহ", "Wood duck", "ৰাজ্যিক চৰাই", "STATE BIRD", "অসমৰ ৰাজ্যিক চৰাই", "State bird of Assam"],
     [null,  "ধনেশ", "Hornbill", "শিঙা ঠোঁট", "HORNED BEAK", "ঠোঁটৰ ওপৰত শিঙৰ দৰে খোল থকা ডাঙৰ চৰাই", "Large bird with a casque on its beak"],
     [null,  "হাড়গিলা", "Adjutant", "বিপন্ন বগ", "RARE STORK", "পূৰ্ণিমা দেৱী বৰ্মনে ৰক্ষা কৰা বিপন্ন চৰাই", "Endangered stork protected by Purnima Devi Barman"],
     [null,  "কুলি", "Koel", "বহাগৰ মাত", "SPRING CALL", "বহাগ বিহুৰ বতৰত মাত দিয়া চৰাই", "Bird whose call marks Bohag Bihu"],
@@ -110,8 +110,8 @@ window.THEMES = [
     [null,  "শিঙি", "Singhi", "কাঁইট মাছ", "STINGER", "কাঁইটেৰে বিন্ধা গোঁফ থকা মাছ", "Catfish with a painful sting"],
     [null,  "বৰালি", "Borali", "বৰ মাছ", "GIANT CATFISH", "নদীৰ ডাঙৰ চিকাৰী মাছ", "Large predatory river catfish"],
     [null,  "চিতল", "Chital", "পাখি পিঠি", "FEATHERBACK", "পিঠি পাখিৰ দৰে চেপেটা মাছ", "Flat fish with a feather-like back"],
-    [null,  "কাৱৈ", "Koi", "গছ বগোৱা", "CLIMBER", "পানীৰ বাহিৰতো জীয়াই থাকিব পৰা মাছ", "Perch that can survive out of water"],
-    [null,  "শল", "Sol", "ডাঙৰ শল", "SNAKEHEAD", "সাপৰ দৰে মূৰ থকা ডাঙৰ মাছ", "Large fish with a snake-like head"],
+    [null,  "কাৱৈ", "Koi", "শুকানতো জীয়ে", "HARDY PERCH", "পানীৰ বাহিৰতো জীয়াই থাকিব পৰা মাছ", "Perch that can survive out of water"],
+    [null,  "শল", "Sol", "সাপৰ দৰে মূৰ", "SNAKEHEAD", "সাপৰ দৰে মূৰ থকা ডাঙৰ মাছ", "Large fish with a snake-like head"],
     [null,  "গৰৈ", "Goroi", "সৰু শল", "SMALL SNAKEHEAD", "শলৰ দৰে সৰু মাছ", "Small spotted snakehead fish"],
     [null,  "পুঠি", "Puthi", "সৰু মাছ", "SMALL FRY", "সৰু ৰূপালী মাছ", "Small silvery barb"],
     [null,  "ভকুৱা", "Catla", "ডাঙৰ মূৰ", "BIG HEAD", "ডাঙৰ মূৰৰ কাৰ্প মাছ", "Big-headed carp"],
@@ -131,11 +131,11 @@ window.THEMES = [
     [null,  "সত্ৰ", "Satra", "মঠ", "MONASTERY", "বৈষ্ণৱ ধৰ্মৰ অনুষ্ঠান", "Vaishnavite monastery"],
     [null,  "জোৰোণ", "Joron", "বিয়াৰ আগৰ", "BEFORE WEDDING", "কইনাক উপহাৰ দিয়া বিয়াৰ আগৰ অনুষ্ঠান", "Pre-wedding gift ceremony for the bride"],
     [null,  "তামোলপাণ", "Tamul pan", "আদৰণি", "WELCOME", "আলহীক আগবঢ়োৱা তামোল আৰু পাণ", "Areca nut and betel leaf offered to guests"],
-    [null,  "জলপান", "Jolpan", "ৰাতিপুৱাৰ আহাৰ", "BREAKFAST", "চিৰা, দৈ, গুড়েৰে পৰম্পৰাগত জলপান", "Traditional breakfast of flattened rice, curd and jaggery"]
+    [null,  "জলপান", "Jolpan", "ৰাতিপুৱাৰ আহাৰ", "BREAKFAST", "চিৰা, দৈ, গুড়েৰে পৰম্পৰাগত ৰাতিপুৱাৰ আহাৰ", "Traditional breakfast of flattened rice, curd and jaggery"]
   ]},
   { id: "sports", as: "খেল", en: "Sports", words: [
     [null,  "হিমা দাস", "Hima Das", "ধিং এক্সপ্ৰেছ", "DHING EXPRESS", "ধিং এক্সপ্ৰেছ নামে জনাজাত দৌৰবিদ", "Sprinter called the Dhing Express"],
-    [null,  "লাভলীনা বৰগোহাঁই", "Lovlina Borgohain", "মুষ্টিযুঁজাৰু", "BOXER", "টকিঅ' অলিম্পিকত ব্ৰঞ্জ পোৱা মুষ্টিযুঁজাৰু", "Boxer who won Olympic bronze at Tokyo 2020"],
+    [null,  "লাভলীনা বৰগোহাঁই", "Lovlina Borgohain", "অলিম্পিক পদক", "OLYMPIC MEDAL", "টকিঅ' অলিম্পিকত ব্ৰঞ্জ পোৱা মুষ্টিযুঁজাৰু", "Boxer who won Olympic bronze at Tokyo 2020"],
     [null,  "শিৱ থাপা", "Shiva Thapa", "মুষ্টিযুঁজাৰু", "BOXER", "গুৱাহাটীৰ মুষ্টিযুঁজাৰু", "Boxer from Guwahati"],
     [null,  "ৰিয়ান পৰাগ", "Riyan Parag", "ক্ৰিকেটাৰ", "CRICKETER", "আইপিএলত খেলা গুৱাহাটীৰ ক্ৰিকেটাৰ", "Cricketer from Guwahati who plays in the IPL"],
     [null,  "ভোগেশ্বৰ বৰুৱা", "Bhogeswar Baruah", "এছিয়াড সোণ", "ASIAD GOLD", "১৯৬৬ চনৰ এছিয়ান গেমছত সোণ পোৱা প্ৰথম অসমীয়া", "First Assamese to win Asian Games gold (1966)"],
@@ -145,7 +145,7 @@ window.THEMES = [
     [null,  "বেডমিণ্টন", "Badminton", "চাটল", "SHUTTLE", "ৰেকেট আৰু চাটলেৰে খেলা খেল", "Game played with rackets and a shuttlecock"],
     [null,  "কাবাডী", "Kabaddi", "দম খেল", "RAID GAME", "উশাহ বন্ধ কৰি ৰেইড কৰা খেল", "Raiding game played holding the breath"],
     [null,  "দবা", "Chess", "ৰজা-মন্ত্ৰী", "KING AND QUEEN", "চৌষষ্ঠি ঘৰৰ বুদ্ধিৰ খেল", "Strategy game on 64 squares"],
-    [null,  "নাওখেল", "Boat race", "নাওৰ দৌৰ", "BOAT RACE", "নদীত নাও বাই খেলা পৰম্পৰাগত খেল", "Traditional race of boats on a river"],
+    [null,  "নাওখেল", "Boat race", "নাওৰ দৌৰ", "RIVER RACE", "নদীত নাও বাই খেলা পৰম্পৰাগত খেল", "Traditional race of boats on a river"],
     [null,  "কণীযুঁজ", "Egg fight", "বিহুৰ খেল", "BIHU GAME", "বহাগ বিহুত কণী খুন্দাখুন্দি কৰা খেল", "Bihu game of knocking eggs together"]
   ]},
   { id: "singers", as: "শিল্পী", en: "Singers", words: [
@@ -153,7 +153,7 @@ window.THEMES = [
     [null,  "জুবিন গাৰ্গ", "Zubeen Garg", "য়া আলি", "YA ALI", "'য়া আলি' গীতৰ বাবে জনাজাত শিল্পী", "Singer known for 'Ya Ali'"],
     [null,  "পাপন", "Papon", "অংগৰাগ", "ANGARAG", "অংগৰাগ মহন্তৰ মঞ্চ নাম", "Stage name of Angarag Mahanta"],
     [null,  "খগেন মহন্ত", "Khagen Mahanta", "লোকগীত", "FOLK SINGER", "বিহুগীতৰ শিল্পী, পাপনৰ পিতৃ", "Bihu folk singer, father of Papon"],
-    [null,  "অৰ্চনা মহন্ত", "Archana Mahanta", "লোকগীত", "FOLK SINGER", "লোকগীতৰ শিল্পী, খগেন মহন্তৰ পত্নী", "Folk singer, wife of Khagen Mahanta"],
+    [null,  "অৰ্চনা মহন্ত", "Archana Mahanta", "খগেনৰ পত্নী", "KHAGEN'S WIFE", "লোকগীতৰ শিল্পী, খগেন মহন্তৰ পত্নী", "Folk singer, wife of Khagen Mahanta"],
     [null,  "প্ৰতিমা বৰুৱা পাণ্ডে", "Pratima Barua Pandey", "গোৱালপৰীয়া", "GOALPARIYA", "গোৱালপৰীয়া লোকগীতৰ শিল্পী", "Singer of Goalpariya folk songs"],
     [null,  "দীপালী বৰঠাকুৰ", "Dipali Borthakur", "পদ্মশ্ৰী", "PADMA SHRI", "১৯৯৮ চনত পদ্মশ্ৰী পোৱা গায়িকা", "Singer awarded the Padma Shri in 1998"],
     [null,  "জয়ন্ত হাজৰিকা", "Jayanta Hazarika", "ভূপেনৰ ভাই", "BHUPEN'S BROTHER", "ভূপেন হাজৰিকাৰ ভাই, গায়ক", "Singer, younger brother of Bhupen Hazarika"],
@@ -201,7 +201,7 @@ window.THEMES = [
     [null,  "সাহিত্য অকাডেমী", "Sahitya Akademi", "লিখকৰ বঁটা", "WRITERS' AWARD", "ভাৰতীয় ভাষাৰ সাহিত্যৰ জাতীয় বঁটা", "National award for literature in Indian languages"],
     [null,  "শংকৰদেৱ বঁটা", "Sankardev Award", "সংস্কৃতি", "CULTURE", "শ্ৰীমন্ত শংকৰদেৱৰ নামত দিয়া বঁটা", "Award named after Srimanta Sankardeva"],
     [null,  "লাচিত বঁটা", "Lachit medal", "শ্ৰেষ্ঠ কেডেট", "BEST CADET", "এনডিএৰ শ্ৰেষ্ঠ কেডেটক দিয়া সোণৰ পদক", "Gold medal for the best cadet at the NDA"],
-    [null,  "বিষ্ণু ৰাভা বঁটা", "Bishnu Rabha Award", "কলাগুৰু", "KALAGURU", "কলাগুৰুৰ নামত দিয়া বঁটা", "Award in memory of Kalaguru"]
+    [null,  "বিষ্ণু ৰাভা বঁটা", "Bishnu Rabha Award", "কলাগুৰুৰ নামত", "IN KALAGURU'S NAME", "কলাগুৰুৰ নামত দিয়া বঁটা", "Award in memory of Kalaguru"]
   ]},
   { id: "policies", as: "চৰকাৰী আঁচনি", en: "Government schemes", words: [
     [null,  "অৰুণোদই", "Orunodoi", "মাহিলী সাহায্য", "MONTHLY AID", "দুখীয়া পৰিয়ালৰ মহিলাক মাহে মাহে ধন দিয়া আঁচনি (২০২০)", "Monthly cash support for women of poor families (2020)"],
@@ -209,8 +209,8 @@ window.THEMES = [
     [null,  "নিযুত বাবু", "Nijut Babu", "ছাত্ৰ", "BOY STUDENTS", "স্নাতক-স্নাতকোত্তৰ ছাত্ৰক মাহিলী সাহায্য", "Monthly support for male UG and PG students"],
     [null,  "মিছন বসুন্ধৰা", "Mission Basundhara", "মাটি", "LAND", "মাটিৰ পট্টা আৰু ভূমি ৰেকৰ্ডৰ আঁচনি", "Land patta and land records mission"],
     [null,  "মহিলা উদ্যমিতা", "Mahila Udyamita", "স্বনিযুক্তি", "SELF-EMPLOYED", "আত্মসহায়ক গোটৰ মহিলাক ব্যৱসায়ৰ সাহায্য", "Business support for women in self-help groups"],
-    [null,  "আনন্দৰাম বৰুৱা বঁটা", "Anundoram Borooah", "মেধা", "MERIT", "মেট্ৰিকত ভাল ফল কৰা ছাত্ৰ-ছাত্ৰীৰ বঁটা", "Award for top results in Class 10"],
-    [null,  "বাণীকান্ত কাকতি", "Banikanta Kakati", "মেধা", "MERIT", "উচ্চতৰ মাধ্যমিকৰ মেধা বঁটা", "Merit award for Class 12 results"],
+    [null,  "আনন্দৰাম বৰুৱা বঁটা", "Anundoram Borooah", "মেট্ৰিকৰ মেধা", "CLASS 10 MERIT", "মেট্ৰিকত ভাল ফল কৰা ছাত্ৰ-ছাত্ৰীৰ বঁটা", "Award for top results in Class 10"],
+    [null,  "বাণীকান্ত কাকতি", "Banikanta Kakati", "দ্বাদশৰ মেধা", "CLASS 12 MERIT", "উচ্চতৰ মাধ্যমিকৰ মেধা বঁটা", "Merit award for Class 12 results"],
     [null,  "গুণোৎসৱ", "Gunotsav", "বিদ্যালয়", "SCHOOLS", "বিদ্যালয়ৰ শিক্ষাৰ মান জোখা কাৰ্যসূচী", "Programme that grades the quality of schools"]
   ]},
   { id: "world", as: "বিশ্বৰ সাধাৰণ জ্ঞান", en: "World general knowledge", words: [
