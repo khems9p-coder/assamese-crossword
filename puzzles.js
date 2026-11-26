@@ -10,12 +10,12 @@ window.THEMES = [
   { id: "animals", as: "পশু", en: "Animals", words: [
     ["elephant", "হাতী", "ELEPHANT", "শুঁৰ", "TRUNK"], ["rhino", "গঁড়", "RHINO", "এশিঙীয়া", "ONE HORN"], ["tiger", "বাঘ", "TIGER", "ডোৰাকটা", "STRIPES"],
     ["cat", "মেকুৰী", "CAT", "মিঁয়াও", "MEOW"], ["dog", "কুকুৰ", "DOG", "ভুকে", "BARKS"], ["cow", "গৰু", "COW", "হাম্বা", "MOO"],
-    ["monkey", "বান্দৰ", "MONKEY", "গছে গছে", "SWINGS"], ["fish", "মাছ", "FISH", "সাঁতোৰে", "SWIMS"], ["rabbit", "শহাপহু", "RABBIT", "দীঘল কাণ", "LONG EARS"],
-    ["snake", "সাপ", "SNAKE", "নাগ", "HISS"]
+    ["monkey", "বান্দৰ", "MONKEY", "মানুহৰ পুৰ্ব পুৰুষ", "SWINGS"], ["fish", "মাছ", "FISH", "সাঁতোৰে", "SWIMS"], ["rabbit", "শহাপহু", "RABBIT", "দীঘল কাণ", "LONG EARS"],
+    ["snake", "সাপ", "SNAKE", "সৰিসৃপ প্ৰজাতি", "HISS"]
   ]},
   { id: "birds", as: "চৰাই আৰু পোক", en: "Birds & bugs", words: [
-    ["duck", "হাঁহ", "DUCK", "জলচৰ", "QUACK"], ["rooster", "কুকুৰা", "ROOSTER", "পুৱাৰ ডাক", "DAWN CALL"], ["owl", "ফেঁচা", "OWL", "নিশাচৰ", "NIGHT BIRD"],
-    ["parrot", "ভাটৌ", "PARROT", "কথা কয়", "TALKS"], ["crow", "কাউৰী", "CROW", "কা কা", "CAW"], ["pigeon", "কপৌ", "PIGEON", "শান্তিৰ চিন", "PEACE BIRD"],
+    ["duck", "হাঁহ", "DUCK", "কোমোৰাৰ লগত খাবলৈ ভাল", "QUACK"], ["rooster", "কুকুৰা", "ROOSTER", "পুৱাৰ ডাক", "DAWN CALL"], ["owl", "ফেঁচা", "OWL", "নিশাচৰ", "NIGHT BIRD"],
+    ["parrot", "ভাটৌ", "PARROT", "কথা কোৱা চৰাই", "TALKS"], ["crow", "কাউৰী", "CROW", "কা কা", "A BLACK BIRD"], ["pigeon", "কপৌ", "PIGEON", "শান্তিৰ চিন", "PEACE BIRD"],
     ["butterfly", "পখিলা", "BUTTERFLY", "ৰঙীন পাখি", "WINGS"], ["bee", "মৌমাখি", "BEE", "গুণগুণায়", "HONEY MAKER"], ["ant", "পৰুৱা", "ANT", "সৰু পোক", "TINY WORKER"]
   ]},
   { id: "food", as: "খাদ্য", en: "Food", words: [
@@ -48,7 +48,7 @@ window.THEMES = [
   ]},
   { id: "colours", as: "ৰং", en: "Colours", words: [
     ["red", "ৰঙা", "RED", "তেজ", "BLOOD"], ["blue", "নীলা", "BLUE", "আকাশ", "SKY"], ["green", "সেউজীয়া", "GREEN", "পাত", "LEAF"],
-    ["yellow", "হালধীয়া", "YELLOW", "হালধি", "TURMERIC"], ["pink", "গোলাপী", "PINK", "পদুম", "ROSE"],
+    ["yellow", "হালধীয়া", "YELLOW", "হালধি", "TURMERIC"], ["pink", "গোলাপী", "PINK", "গোলাপ", "ROSE"],
     ["orange", "কমলা", "ORANGE", "টেঙা", "CITRUS"], ["purple", "বেঙুনীয়া", "PURPLE", "জামু", "BRINJAL"]
   ]},
   { id: "transport", as: "যান-বাহন", en: "Transport", words: [
