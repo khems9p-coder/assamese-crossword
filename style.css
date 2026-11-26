@@ -290,3 +290,9 @@ html[lang="as"] .cell { font-weight: 800; font-size: calc(var(--cell) * .5); }
 .ok-note small { color: var(--muted); font-weight: 600; }
 .name-edit .link { flex: none; white-space: nowrap; padding: 8px 4px; color: var(--accent); font-weight: 800; }
 .profile-top .big-avatar { width: 52px; height: 52px; }
+
+/* letters filled in at the start, and fill-in-the-blank clues */
+.cell.given { background: #eef2f7; color: #3a4a5e; }
+.cell.given.in-word { background: linear-gradient(#f3ecdc, #e9dcc0); }
+.hint-word.pattern { letter-spacing: 1px; text-transform: none; font-size: clamp(9px, calc(var(--cell) * .24), 13px); }
+.hint-word.pattern[lang="as"] { letter-spacing: 0; }

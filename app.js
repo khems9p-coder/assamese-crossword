@@ -166,10 +166,16 @@
   // the whole picture-word pool, limited by word length.
   // share of clues shown as a picture instead of a hint word
   const ICON_SHARE = [0.55, 0.4, 0.3];
+  // like classic arrow-word apps: only a few picture clues per board
+  const ICON_CAP = [3, 2, 2];
+  // some clues show the answer with gaps (শ_প_হু, B_N_NA), mostly on easier levels
+  const PATTERN_SHARE = [0.25, 0.18, 0.1];
+  // letters already filled in when a level starts
+  const GIVEN_SHARE = [0.24, 0.17, 0.11];
   const DIFFS = [
-    { id: "easy", as: "সহজ", en: "Easy", cap: 12, minLen: { as: 2, en: 3 }, maxLen: { as: 3, en: 5 }, decoys: 1, color: "#7cc576" },
-    { id: "medium", as: "মধ্যম", en: "Medium", cap: 15, minLen: { as: 2, en: 3 }, maxLen: { as: 4, en: 7 }, decoys: 2, color: "#f7a541" },
-    { id: "hard", as: "কঠিন", en: "Hard", cap: 19, minLen: { as: 2, en: 3 }, maxLen: { as: 9, en: 9 }, decoys: 3, color: "#ef5b5b" }
+    { id: "easy", as: "সহজ", en: "Easy", cap: 16, minLen: { as: 2, en: 2 }, maxLen: { as: 3, en: 5 }, decoys: 1, color: "#7cc576" },
+    { id: "medium", as: "মধ্যম", en: "Medium", cap: 19, minLen: { as: 2, en: 2 }, maxLen: { as: 4, en: 7 }, decoys: 2, color: "#f7a541" },
+    { id: "hard", as: "কঠিন", en: "Hard", cap: 22, minLen: { as: 2, en: 2 }, maxLen: { as: 9, en: 9 }, decoys: 3, color: "#ef5b5b" }
   ];
   const LEVELS = 20;
 
@@ -198,8 +204,20 @@
       wd.id = i;
       wd.cells = wd.units.map((_, j) => [wd.y + (wd.dir === "down" ? j : 0), wd.x + (wd.dir === "across" ? j : 0)]);
       wd.clue = wd.dir === "down" ? [wd.y - 1, wd.x] : [wd.y, wd.x - 1];
-      wd.showIcon = !!wd.icon && r() < ICON_SHARE[diffIndex];
+      wd.showIcon = false;
+      wd.pattern = null;
     });
+    // a few pictures, spread over the board
+    let icons = 0;
+    for (const wd of shuffle(words, r)) {
+      if (wd.icon && icons < ICON_CAP[diffIndex] && r() < ICON_SHARE[diffIndex] + 0.15) { wd.showIcon = true; icons++; }
+    }
+    // fill-in-the-blank clues: show about half of the answer, the rest as gaps
+    for (const wd of words) {
+      if (wd.showIcon || wd.units.length < 3 || r() >= PATTERN_SHARE[diffIndex]) continue;
+      const keep = new Set(shuffle(wd.units.map((_, j) => j), r).slice(0, Math.floor(wd.units.length / 2)));
+      wd.pattern = wd.units.map((u, j) => (keep.has(j) ? u : "_")).join("");
+    }
     const sol = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
     const clues = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
     for (const wd of words) {
@@ -609,11 +627,13 @@
     game = {
       diff: d, level, grid, fill, saveKey, sig, seed: levelKey(d, level),
       revealed: new Set(saved ? saved.revealed || [] : []),
+      given: new Set(saved ? saved.given || [] : []),
       hintsUsed: saved ? saved.hintsUsed || 0 : 0,
       seconds: saved ? saved.seconds || 0 : 0,
       shownMeaning: new Set(saved ? saved.shownMeaning || [] : []),
       active: 0, cursor: 0, wrong: new Set(), finished: false
     };
+    if (!saved) placeGivenLetters();
     // start on the first unsolved word
     const firstOpen = grid.words.findIndex((w) => !wordSolved(w));
     game.active = firstOpen < 0 ? 0 : firstOpen;
@@ -622,9 +642,29 @@
     startTimer();
   }
 
+  // Fill some letters in at the start, as classic arrow-word apps do. Every word keeps
+  // at least half of its squares empty, so nothing is solved for the player.
+  function placeGivenLetters() {
+    const { grid } = game;
+    const r = rng(game.seed + "-given");
+    const cells = [];
+    grid.sol.forEach((row, y) => row.forEach((u, x) => { if (u != null) cells.push([y, x]); }));
+    const target = Math.round(cells.length * GIVEN_SHARE[game.diff]);
+    const givenIn = (w) => w.cells.filter(([y, x]) => game.given.has(y + "," + x)).length;
+    for (const [y, x] of shuffle(cells, r)) {
+      if (game.given.size >= target) break;
+      const k = y + "," + x;
+      const ws = grid.words.filter((w) => w.cells.some(([a, b]) => a === y && b === x));
+      if (ws.some((w) => givenIn(w) + 1 > Math.floor(w.cells.length / 2))) continue;
+      game.given.add(k);
+      game.revealed.add(k);
+      game.fill[y][x] = grid.sol[y][x];
+    }
+  }
+
   function save() {
     if (!game || game.finished) return;
-    store.set(game.saveKey, { sig: game.sig, fill: game.fill, revealed: [...game.revealed], hintsUsed: game.hintsUsed, seconds: game.seconds, shownMeaning: [...game.shownMeaning] });
+    store.set(game.saveKey, { sig: game.sig, given: [...game.given], fill: game.fill, revealed: [...game.revealed], hintsUsed: game.hintsUsed, seconds: game.seconds, shownMeaning: [...game.shownMeaning] });
   }
 
   function startTimer() {
@@ -692,7 +732,9 @@
     const clueHalf = (id, d, half) => {
       const w = grid.words[id];
       const cls = ["clue-half", half, id === game.active ? "on" : "", wordSolved(w) ? "done" : ""].join(" ");
-      const body = w.showIcon ? doodle(w.icon, "cell-art") : `<span class="hint-word" lang="${lang}">${esc(w.hint)}</span>`;
+      const body = w.showIcon ? doodle(w.icon, "cell-art")
+        : w.pattern ? `<span class="hint-word pattern" lang="${lang}">${esc(w.pattern)}</span>`
+        : `<span class="hint-word" lang="${lang}">${esc(w.hint)}</span>`;
       return `<button class="${cls}" data-id="${id}" aria-label="${esc(w.hint)}">${body}<i class="arrow ${d}"></i></button>`;
     };
     let html = "";
@@ -701,7 +743,7 @@
       if (u != null) {
         const k = y + "," + x, v = game.fill[y][x];
         const cls = ["cell", actSet.has(k) ? "in-word" : "", y === cy && x === cx ? "cursor" : "", game.wrong.has(k) ? "wrong" : "",
-          game.revealed.has(k) ? "revealed" : "", solvedSet.has(k) ? "ok" : "", v && v.length > 2 ? "long" : ""].join(" ");
+          game.given.has(k) ? "given" : game.revealed.has(k) ? "revealed" : "", solvedSet.has(k) ? "ok" : "", v && v.length > 2 ? "long" : ""].join(" ");
         html += `<button class="${cls}" data-y="${y}" data-x="${x}"><span class="v">${v || ""}</span></button>`;
       } else if (c) {
         const both = c.across != null && c.down != null;
@@ -745,10 +787,11 @@
     const meaning = game.shownMeaning.has(w.id) ? `<span class="meaning">${t().meaning}: <b lang="${lang === "as" ? "en" : "as"}">${w.alt}</b></span>` : "";
     $("#clueBar").innerHTML = `
       <button class="nav" id="prevW" aria-label="previous">‹</button>
-      <div class="clue-art ${wordSolved(w) ? "solved" : ""}${w.showIcon ? "" : " text"}">${w.showIcon ? doodle(w.icon, "big-art") : `<span class="big-hint" lang="${lang}">${esc(w.hint)}</span>`}</div>
+      <div class="clue-art ${wordSolved(w) ? "solved" : ""}${w.showIcon ? "" : " text"}">${w.showIcon ? doodle(w.icon, "big-art") : `<span class="big-hint" lang="${lang}">${esc(w.pattern || w.hint)}</span>`}</div>
       <div class="clue-info">
         <span class="clue-num">${w.dir === "across" ? t().across + " →" : t().down + " ↓"}</span>
         <span class="clue-len">${fmtNum(w.units.length)}${t().squares}</span>
+        ${w.pattern ? `<span class="full-clue" lang="${lang}">${esc(w.hint)}</span>` : ""}
         ${w.clueText ? `<span class="full-clue" lang="${lang}">${esc(w.clueText)}</span>` : ""}
         ${meaning}
       </div>
