@@ -304,7 +304,7 @@ window.THEMES = [
     [null,  "নহয়", "No", "অসন্মতি", "REFUSE", "হয়ৰ বিপৰীত", "Opposite of yes"],
     [null,  "ওপৰ", "Up", "তলৰ বিপৰীত", "NOT DOWN", "তলৰ বিপৰীত", "Opposite of down"],
     [null,  "ভিতৰ", "In", "বাহিৰৰ বিপৰীত", "NOT OUT", "বাহিৰৰ বিপৰীত", "Opposite of out"],
-    [null,  "যোৱা", "Go", "আহাৰ বিপৰীত", "NOT STOP", "অহাৰ বিপৰীত", "Opposite of stop"],
+    [null,  "যোৱা", "Go", "অহাৰ বিপৰীত", "NOT STOP", "অহাৰ বিপৰীত", "Opposite of stop"],
     [null,  "কাঁড়", "Arrow", "ধনুৰ সংগী", "BOW'S PARTNER", "ধনুৰে মৰা", "Shot from a bow"],
     [null,  "চকা", "Wheel", "ঘূৰে", "ROLLS", "গাড়ীৰ ঘূৰণীয়া অংশ", "Round part of a cart"],
     [null,  "টুপী", "Cap", "মূৰৰ সাজ", "HEADWEAR", "মূৰত পিন্ধা সাজ", "Worn on the head"],

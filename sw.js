@@ -1,5 +1,5 @@
 // Offline cache. Bump VERSION whenever you change any file so phones get the update.
-const VERSION = "axw-v12";
+const VERSION = "axw-v13";
 const FILES = ["./", "index.html", "style.css", "app.js", "puzzles.js", "levels.js", "icons.js", "manifest.json", "config.js", "cloud.js", "ads.js", "privacy.html",
   "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png"];
 
