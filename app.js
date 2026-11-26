@@ -795,14 +795,24 @@
   document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
 
   // expose for tests
-  window.AXW = { splitUnits, buildLevel, DIFFS, LEVELS };
+  // Running inside the Android app (files packed in the APK)?
+  const IN_APP = location.hostname === "appassets.androidplatform.net";
+  // Android back button: close an open sheet, else leave the game; false = let the app close
+  function goBack() {
+    const sh = $("#sheet");
+    if (sh && !sh.hidden) { sh.hidden = true; sh.innerHTML = ""; return true; }
+    if (game) { save(); renderHome(); return true; }
+    return false;
+  }
+  window.AXW = { splitUnits, buildLevel, DIFFS, LEVELS, back: goBack, inApp: IN_APP };
 
   if (app) renderHome();
   if (window.Cloud && Cloud.configured) {
     Cloud.onChange((u) => { if (u) syncCloud(true); else if (!game) renderHome(); });
     Cloud.init();
   }
-  if ("serviceWorker" in navigator && location.protocol === "https:") {
+  // offline cache for the website only; the Android app already has every file inside it
+  if (!IN_APP && "serviceWorker" in navigator && location.protocol === "https:") {
     try { navigator.serviceWorker.register("sw.js").catch(() => {}); } catch (e) { /* not available */ }
   }
 })();

@@ -6,6 +6,11 @@ on:
     paths:
       - "android/**"
       - ".github/workflows/android.yml"
+      # the game is packed inside the app, so rebuild when it changes too
+      - "*.html"
+      - "*.js"
+      - "*.css"
+      - "icons/**"
   workflow_dispatch:
 
 permissions:
@@ -35,7 +40,8 @@ jobs:
           chmod +x android/gradlew
 
       # Signing key: from repository secrets if they exist (use these for Play).
-      # Without them a throw-away test key is made, good only for trying the APK.
+      # Without them the fixed TEST key in android/test-signing.jks is used:
+      # fine for installing the APK on your phone, never for Play.
       - id: signing
         name: Prepare signing key
         env:
@@ -52,13 +58,12 @@ jobs:
             echo "KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
             echo "SIGNED_WITH=upload key (from secrets)" >> "$GITHUB_ENV"
           else
-            echo "::warning::No KEYSTORE_BASE64 secret found - signing with a temporary TEST key. Do not upload this AAB to Play."
-            keytool -genkeypair -keystore "$KS" -alias test -keyalg RSA -keysize 2048 -validity 365 \
-              -storepass testpass -keypass testpass -dname "CN=Test, O=KBX Studios, C=IN"
-            echo "KEYSTORE_PASSWORD=testpass" >> "$GITHUB_ENV"
+            echo "::warning::No KEYSTORE_BASE64 secret found - signing with the TEST key. Do not upload this AAB to Play."
+            cp android/test-signing.jks "$KS"
+            echo "KEYSTORE_PASSWORD=testtest" >> "$GITHUB_ENV"
             echo "KEY_ALIAS=test" >> "$GITHUB_ENV"
-            echo "KEY_PASSWORD=testpass" >> "$GITHUB_ENV"
-            echo "SIGNED_WITH=temporary TEST key" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=testtest" >> "$GITHUB_ENV"
+            echo "SIGNED_WITH=TEST key (for trying on a phone only)" >> "$GITHUB_ENV"
           fi
           echo "KEYSTORE_PATH=$KS" >> "$GITHUB_ENV"
 
@@ -77,17 +82,6 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk "out/shabdajal-${V}.apk"
           cp android/app/build/outputs/bundle/release/app-release.aab "out/shabdajal-${V}.aab"
           SHA=$(keytool -list -v -keystore "$KEYSTORE_PATH" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | grep -m1 "SHA256:" | sed 's/.*SHA256: //')
-          cat > out/assetlinks.json <<JSON
-          [{
-            "relation": ["delegate_permission/common.handle_all_urls"],
-            "target": {
-              "namespace": "android_app",
-              "package_name": "com.kbxstudios.shabdajal",
-              "sha256_cert_fingerprints": ["${SHA}"]
-            }
-          }]
-          JSON
-          sed -i 's/^          //' out/assetlinks.json
           {
             echo "### শব্দজাল build ${V}"
             echo "Signed with: **${SIGNED_WITH}**"
@@ -123,6 +117,5 @@ jobs:
           body: |
             Signed with: ${{ env.SIGNED_WITH }}
             - `.apk` – install directly on a phone to test
-            - `.aab` – upload to Google Play Console
-            - `assetlinks.json` – publish at https://khems9p-coder.github.io/.well-known/assetlinks.json
+            - `.aab` – upload to Google Play Console (only when signed with the upload key)
           files: out/*

@@ -15,7 +15,8 @@
   }
 
   window.Ads = {
-    get enabled() { return !!(a.enabled && a.client && navigator.onLine !== false); },
+    // AdSense is for websites only; the Android app would need AdMob instead
+    get enabled() { return !!(a.enabled && a.client && navigator.onLine !== false && location.hostname !== "appassets.androidplatform.net"); },
     // returns the html for an ad box; call Ads.fill() after it is in the page
     slot(name) {
       if (!this.enabled) return "";

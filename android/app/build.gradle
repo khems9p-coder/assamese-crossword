@@ -1,14 +1,9 @@
+import javax.inject.Inject
+
 plugins {
     id 'com.android.application'
 }
 
-// ---- App settings -----------------------------------------------------------
-// The app opens this web address full screen (Trusted Web Activity).
-def twa = [
-    host      : 'khems9p-coder.github.io',
-    startUrl  : 'https://khems9p-coder.github.io/assamese-crossword/index.html',
-    pathPrefix: '/assamese-crossword',
-]
 // Raise versionName for each Play release. versionCode comes from the build
 // number on GitHub Actions (or 1 for a local build) so it always goes up.
 def appVersionName = '1.0.0'
@@ -24,13 +19,11 @@ android {
         targetSdk 36
         versionCode appVersionCode
         versionName appVersionName
-        manifestPlaceholders = [hostName: twa.host, pathPrefix: twa.pathPrefix]
-        resValue 'string', 'launchUrl', twa.startUrl
     }
 
     signingConfigs {
         release {
-            // Supplied by the GitHub Actions workflow (see android/README.md).
+            // Set by the GitHub Actions workflow (see android/README.md).
             def ks = System.getenv('KEYSTORE_PATH')
             if (ks) {
                 storeFile file(ks)
@@ -55,5 +48,52 @@ android {
 }
 
 dependencies {
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+    implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'androidx.activity:activity:1.9.3'
+    implementation 'androidx.core:core:1.13.1'
+}
+
+// ---- Pack the game (the web files at the top of the repo) into the app -------
+// They end up in the APK under assets/www/ and are served to the app's WebView.
+abstract class CopyWebAssets extends DefaultTask {
+    @InputFiles
+    abstract ConfigurableFileCollection getSources()
+
+    @Internal
+    abstract DirectoryProperty getWebRoot()
+
+    @OutputDirectory
+    abstract DirectoryProperty getOutputDir()
+
+    @Inject
+    abstract FileSystemOperations getFs()
+
+    @TaskAction
+    void copyFiles() {
+        def out = outputDir.get().asFile
+        fs.delete { it.delete(out) }
+        fs.copy { spec ->
+            spec.from(webRoot.get().asFile) { inner ->
+                inner.include('index.html', 'style.css', '*.js', 'manifest.json', 'privacy.html', 'icons/**')
+                inner.exclude('sw.js')
+            }
+            spec.into(new File(out, 'www'))
+        }
+    }
+}
+
+def webRootDir = rootProject.layout.projectDirectory.dir('..')
+def copyWeb = tasks.register('copyWebAssets', CopyWebAssets) {
+    webRoot.set(webRootDir)
+    sources.from(rootProject.fileTree('..') {
+        include 'index.html', 'style.css', '*.js', 'manifest.json', 'privacy.html', 'icons/**'
+        exclude 'sw.js'
+    })
+    outputDir.set(layout.buildDirectory.dir('generated/webassets'))
+}
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(copyWeb, { CopyWebAssets t -> t.outputDir })
+    }
 }
